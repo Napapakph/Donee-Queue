@@ -244,10 +244,10 @@ export default function CommissionPage() {
                   <div className="gradient-text" style={{ fontWeight: 700, fontSize: '1.05rem', marginBottom: '0.25rem' }}>{wt.name}</div>
                   {wt.description && <p style={{ color: 'var(--text-secondary)', fontSize: '0.82rem', marginBottom: '0.75rem' }}>{wt.description}</p>}
                   {wt.examples && wt.examples.length > 0 && (
-                    <div style={{ display: 'flex', gap: '0.4rem', marginBottom: '0.75rem', flexWrap: 'wrap' }}>
+                    <div style={{ display: 'flex', gap: '0.5rem', marginBottom: '1rem', flexWrap: 'wrap' }}>
                       {wt.examples.map((ex, i) => (
-                        <a key={i} href={ex} target="_blank" rel="noopener noreferrer">
-                          <img src={ex} alt="" style={{ width: 44, height: 44, objectFit: 'cover', borderRadius: 6, border: '1px solid var(--border)' }} />
+                        <a key={i} href={ex} target="_blank" rel="noopener noreferrer" style={{ flex: '1 1 120px', height: 160, display: 'block', overflow: 'hidden', borderRadius: 8, border: '1px solid var(--border)' }}>
+                          <img src={ex} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover', transition: 'transform 0.2s' }} onMouseOver={e => e.currentTarget.style.transform = 'scale(1.05)'} onMouseOut={e => e.currentTarget.style.transform = 'scale(1)'} />
                         </a>
                       ))}
                     </div>
@@ -334,10 +334,10 @@ export default function CommissionPage() {
                     {sc.durationModifierDays !== 0 && ` · ${sc.durationModifierDays > 0 ? '+' : ''}${sc.durationModifierDays} day${Math.abs(sc.durationModifierDays) > 1 ? 's' : ''}`}
                   </div>
                   {sc.examples && sc.examples.length > 0 && (
-                    <div style={{ display: 'flex', gap: '0.4rem', flexWrap: 'wrap' }}>
+                    <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap', marginTop: '0.75rem' }}>
                       {sc.examples.map((ex, i) => (
-                        <a key={i} href={ex} target="_blank" rel="noopener noreferrer">
-                          <img src={ex} alt="" style={{ width: 36, height: 36, objectFit: 'cover', borderRadius: 4, border: '1px solid var(--border)' }} />
+                        <a key={i} href={ex} target="_blank" rel="noopener noreferrer" style={{ flex: '1 1 80px', height: 100, display: 'block', overflow: 'hidden', borderRadius: 6, border: '1px solid var(--border)' }}>
+                          <img src={ex} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover', transition: 'transform 0.2s' }} onMouseOver={e => e.currentTarget.style.transform = 'scale(1.05)'} onMouseOut={e => e.currentTarget.style.transform = 'scale(1)'} />
                         </a>
                       ))}
                     </div>

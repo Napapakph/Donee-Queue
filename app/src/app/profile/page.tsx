@@ -3,7 +3,8 @@ import { useState } from 'react';
 import { Check, Plus, Trash2, ExternalLink, Eye, EyeOff, Upload } from 'lucide-react';
 import { useAppStore } from '@/lib/store';
 import { useToast } from '@/components/ToastProvider';
-import type { SocialPlatform, ContactChannel } from '@/lib/types';
+import { createClient } from '@/lib/supabase/client';
+import type { SocialPlatform, ContactChannel, UserProfile } from '@/lib/types';
 
 const SOCIAL_OPTIONS: { value: SocialPlatform; label: string; icon: string }[] = [
   { value: 'vgen', label: 'VGen', icon: '🎨' },
@@ -36,8 +37,24 @@ export default function ProfilePage() {
   const [showAddChannel, setShowAddChannel] = useState(false);
   const [newCh, setNewCh] = useState<Omit<ContactChannel, 'id'>>({ platform: 'x', url: '', visible: true });
 
-  const handleSaveProfile = () => {
+  const supabase = createClient();
+
+  const syncToDB = async (updates: Partial<UserProfile>) => {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return;
+    
+    const latest = useAppStore.getState().profile;
+    await supabase.from('profiles').update({
+      display_name: latest.displayName,
+      bio: latest.bio,
+      avatar: latest.avatar,
+      contact_channels: latest.contactChannels,
+    }).eq('id', user.id);
+  };
+
+  const handleSaveProfile = async () => {
     updateProfile({ displayName: name, bio });
+    await syncToDB({});
     toast('Profile saved!', 'success');
   };
 
@@ -45,16 +62,18 @@ export default function ProfilePage() {
     const file = e.target.files?.[0];
     if (!file) return;
     const reader = new FileReader();
-    reader.onload = (ev) => {
+    reader.onload = async (ev) => {
       updateProfile({ avatar: ev.target?.result as string });
+      await syncToDB({});
       toast('Avatar updated!', 'success');
     };
     reader.readAsDataURL(file);
   };
 
-  const handleAddChannel = () => {
+  const handleAddChannel = async () => {
     if (!newCh.url.trim()) return toast('URL required', 'error');
     addContactChannel(newCh);
+    await syncToDB({});
     setNewCh({ platform: 'x', url: '', visible: true });
     setShowAddChannel(false);
     toast('Channel added!', 'success');
@@ -166,11 +185,17 @@ export default function ProfilePage() {
                   {isUser && (
                     <>
                       <button className="btn-icon" style={{ padding: '0.2rem', border: 'none' }}
-                        onClick={() => updateContactChannel(ch.id, { visible: !ch.visible })}>
+                        onClick={async () => {
+                          updateContactChannel(ch.id, { visible: !ch.visible });
+                          await syncToDB({});
+                        }}>
                         {ch.visible ? <Eye size={11} /> : <EyeOff size={11} style={{ color: 'var(--text-muted)' }} />}
                       </button>
                       <button className="btn-icon" style={{ padding: '0.2rem', border: 'none', color: 'var(--danger)' }}
-                        onClick={() => removeContactChannel(ch.id)}>
+                        onClick={async () => {
+                          removeContactChannel(ch.id);
+                          await syncToDB({});
+                        }}>
                         <Trash2 size={11} />
                       </button>
                     </>
