@@ -4,7 +4,8 @@ import { Plus, Trash2, Edit2, Check, X, Upload, Eye, EyeOff, Image, BookOpen } f
 import { useAppStore } from '@/lib/store';
 import { useToast } from '@/components/ToastProvider';
 import { ImageLightbox } from '@/components/ImageLightbox';
-import type { WorkType, ScaleType, CommissionStatus } from '@/lib/types';
+import { ImageCropperModal } from '@/components/ImageCropperModal';
+import { parseExample, type WorkType, type ScaleType, type CommissionStatus } from '@/lib/types';
 
 type Tab = 'gallery' | 'pricing' | 'tos';
 
@@ -19,6 +20,7 @@ export default function CommissionPage() {
   const [tab, setTab] = useState<Tab>('gallery');
   const isUser = role === 'user' || role === 'admin';
   const [lightboxData, setLightboxData] = useState<{ images: string[], index: number } | null>(null);
+  const [cropModalData, setCropModalData] = useState<{ src: string, aspectRatio?: number, onDone: (res: { full: string, thumb: string }) => void } | null>(null);
 
   // ── Work Type form ─────────────────────────────────────────────────────────
   const [editWt, setEditWt] = useState<Partial<WorkType> | null>(null);
@@ -72,7 +74,14 @@ export default function CommissionPage() {
     if (!file) return;
     const reader = new FileReader();
     reader.onload = (ev) => {
-      setEditWt((prev) => prev ? { ...prev, examples: [...(prev.examples || []), ev.target?.result as string] } : prev);
+      setCropModalData({
+        src: ev.target?.result as string,
+        aspectRatio: 16 / 9,
+        onDone: (res) => {
+          setEditWt((prev) => prev ? { ...prev, examples: [...(prev.examples || []), JSON.stringify(res)] } : prev);
+          setCropModalData(null);
+        }
+      });
     };
     reader.readAsDataURL(file);
   };
@@ -82,7 +91,14 @@ export default function CommissionPage() {
     if (!file) return;
     const reader = new FileReader();
     reader.onload = (ev) => {
-      setEditSc((prev) => prev ? { ...prev, examples: [...(prev.examples || []), ev.target?.result as string] } : prev);
+      setCropModalData({
+        src: ev.target?.result as string,
+        aspectRatio: 1, // square crop for scale types
+        onDone: (res) => {
+          setEditSc((prev) => prev ? { ...prev, examples: [...(prev.examples || []), JSON.stringify(res)] } : prev);
+          setCropModalData(null);
+        }
+      });
     };
     reader.readAsDataURL(file);
   };
@@ -219,13 +235,15 @@ export default function CommissionPage() {
                   <div className="form-group" style={{ gridColumn: '1/-1' }}>
                     <label className="label">Example Images</label>
                     <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
-                      {editWt.examples?.map((ex, i) => (
+                      {editWt.examples?.map((ex, i) => {
+                        const parsed = parseExample(ex);
+                        return (
                         <div key={i} style={{ position: 'relative', width: 60, height: 60 }}>
-                          <img src={ex} style={{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: 6 }} />
+                          <img src={parsed.thumb} style={{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: 6 }} />
                           <button className="btn-icon btn-danger" style={{ position: 'absolute', top: -4, right: -4, padding: 2, background: 'var(--bg-primary)' }}
                             onClick={() => setEditWt({ ...editWt, examples: editWt.examples?.filter((_, idx) => idx !== i) })}><X size={10} /></button>
                         </div>
-                      ))}
+                      )})}
                       <label style={{ width: 60, height: 60, border: '1px dashed var(--border)', borderRadius: 6, display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }}>
                         <input type="file" accept="image/*" style={{ display: 'none' }} onChange={handleWtExampleUpload} />
                         <Plus size={16} />
@@ -248,11 +266,13 @@ export default function CommissionPage() {
                   {wt.description && <p style={{ color: 'var(--text-secondary)', fontSize: '0.82rem', marginBottom: '0.75rem' }}>{wt.description}</p>}
                   {wt.examples && wt.examples.length > 0 && (
                     <div style={{ display: 'flex', gap: '0.5rem', marginBottom: '1rem', flexWrap: 'wrap' }}>
-                      {wt.examples.map((ex, i) => (
-                        <div key={i} onClick={() => setLightboxData({ images: wt.examples || [], index: i })} style={{ flex: '1 1 120px', height: 160, display: 'block', overflow: 'hidden', borderRadius: 8, border: '1px solid var(--border)', cursor: 'pointer' }}>
-                          <img src={ex} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover', transition: 'transform 0.2s' }} onMouseOver={e => e.currentTarget.style.transform = 'scale(1.05)'} onMouseOut={e => e.currentTarget.style.transform = 'scale(1)'} />
+                      {wt.examples.map((ex, i) => {
+                        const parsed = parseExample(ex);
+                        return (
+                        <div key={i} onClick={() => setLightboxData({ images: wt.examples?.map(e => parseExample(e).full) || [], index: i })} style={{ flex: '1 1 120px', height: 160, display: 'block', overflow: 'hidden', borderRadius: 8, border: '1px solid var(--border)', cursor: 'pointer' }}>
+                          <img src={parsed.thumb} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover', transition: 'transform 0.2s' }} onMouseOver={e => e.currentTarget.style.transform = 'scale(1.05)'} onMouseOut={e => e.currentTarget.style.transform = 'scale(1)'} />
                         </div>
-                      ))}
+                      )})}
                     </div>
                   )}
                   <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
@@ -307,13 +327,15 @@ export default function CommissionPage() {
                   <div className="form-group" style={{ gridColumn: '1/-1' }}>
                     <label className="label">Example Images</label>
                     <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
-                      {editSc.examples?.map((ex, i) => (
+                      {editSc.examples?.map((ex, i) => {
+                        const parsed = parseExample(ex);
+                        return (
                         <div key={i} style={{ position: 'relative', width: 60, height: 60 }}>
-                          <img src={ex} style={{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: 6 }} />
+                          <img src={parsed.thumb} style={{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: 6 }} />
                           <button className="btn-icon btn-danger" style={{ position: 'absolute', top: -4, right: -4, padding: 2, background: 'var(--bg-primary)' }}
                             onClick={() => setEditSc({ ...editSc, examples: editSc.examples?.filter((_, idx) => idx !== i) })}><X size={10} /></button>
                         </div>
-                      ))}
+                      )})}
                       <label style={{ width: 60, height: 60, border: '1px dashed var(--border)', borderRadius: 6, display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }}>
                         <input type="file" accept="image/*" style={{ display: 'none' }} onChange={handleScExampleUpload} />
                         <Plus size={16} />
@@ -338,11 +360,13 @@ export default function CommissionPage() {
                   </div>
                   {sc.examples && sc.examples.length > 0 && (
                     <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap', marginTop: '0.75rem' }}>
-                      {sc.examples.map((ex, i) => (
-                        <div key={i} onClick={() => setLightboxData({ images: sc.examples || [], index: i })} style={{ flex: '1 1 80px', height: 100, display: 'block', overflow: 'hidden', borderRadius: 6, border: '1px solid var(--border)', cursor: 'pointer' }}>
-                          <img src={ex} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover', transition: 'transform 0.2s' }} onMouseOver={e => e.currentTarget.style.transform = 'scale(1.05)'} onMouseOut={e => e.currentTarget.style.transform = 'scale(1)'} />
+                      {sc.examples.map((ex, i) => {
+                        const parsed = parseExample(ex);
+                        return (
+                        <div key={i} onClick={() => setLightboxData({ images: sc.examples?.map(e => parseExample(e).full) || [], index: i })} style={{ flex: '1 1 80px', height: 100, display: 'block', overflow: 'hidden', borderRadius: 6, border: '1px solid var(--border)', cursor: 'pointer' }}>
+                          <img src={parsed.thumb} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover', transition: 'transform 0.2s' }} onMouseOver={e => e.currentTarget.style.transform = 'scale(1.05)'} onMouseOut={e => e.currentTarget.style.transform = 'scale(1)'} />
                         </div>
-                      ))}
+                      )})}
                     </div>
                   )}
                   {isUser && (
@@ -388,6 +412,15 @@ export default function CommissionPage() {
           images={lightboxData.images} 
           initialIndex={lightboxData.index} 
           onClose={() => setLightboxData(null)} 
+        />
+      )}
+
+      {cropModalData && (
+        <ImageCropperModal
+          imageSrc={cropModalData.src}
+          aspectRatio={cropModalData.aspectRatio}
+          onCropDone={cropModalData.onDone}
+          onCancel={() => setCropModalData(null)}
         />
       )}
     </div>

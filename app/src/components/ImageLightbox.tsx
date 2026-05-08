@@ -135,11 +135,7 @@ export function ImageLightbox({ images, initialIndex = 0, onClose }: ImageLightb
           transform: `translate(${pos.x}px, ${pos.y}px) scale(${scale})`,
           transition: isDragging ? 'none' : 'transform 0.15s ease-out',
           cursor: isDragging ? 'grabbing' : 'grab',
-          maxWidth: '85vw', maxHeight: '80vh',
           display: 'flex', alignItems: 'center', justifyContent: 'center',
-          borderRadius: 12,
-          boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.5)',
-          overflow: 'hidden'
         }}
         onPointerDown={(e) => {
           setIsDragging(true);
@@ -158,10 +154,12 @@ export function ImageLightbox({ images, initialIndex = 0, onClose }: ImageLightb
         <canvas 
           ref={canvasRef} 
           style={{ 
-            maxWidth: '100%', maxHeight: '100%', 
+            maxWidth: '90vw', maxHeight: '90vh', 
             objectFit: 'contain', 
-            pointerEvents: 'none', // allow parent to handle drag
-            display: 'block'
+            pointerEvents: 'none',
+            display: 'block',
+            borderRadius: 8,
+            boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.5)'
           }} 
           onContextMenu={(e) => {
              // Let them save if they want, it will have the watermark!

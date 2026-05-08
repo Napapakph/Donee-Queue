@@ -106,6 +106,22 @@ export interface ContactChannel {
   visible: boolean; // show to guests
 }
 
+export interface SettingsPayload {
+  settings: Partial<AppSettings>;
+  profile: Partial<UserProfile>;
+  contactChannels: any[];
+}
+
+export function parseExample(ex: string): { full: string, thumb: string } {
+  try {
+    if (ex.startsWith('{')) {
+      const p = JSON.parse(ex);
+      if (p.full && p.thumb) return p;
+    }
+  } catch (e) {}
+  return { full: ex, thumb: ex };
+}
+
 export interface UserProfile {
   displayName: string;
   avatar?: string;
