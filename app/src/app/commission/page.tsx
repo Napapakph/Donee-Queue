@@ -3,6 +3,7 @@ import { useState, useRef } from 'react';
 import { Plus, Trash2, Edit2, Check, X, Upload, Eye, EyeOff, Image, BookOpen } from 'lucide-react';
 import { useAppStore } from '@/lib/store';
 import { useToast } from '@/components/ToastProvider';
+import { ImageLightbox } from '@/components/ImageLightbox';
 import type { WorkType, ScaleType, CommissionStatus } from '@/lib/types';
 
 type Tab = 'gallery' | 'pricing' | 'tos';
@@ -17,6 +18,7 @@ export default function CommissionPage() {
   const { toast } = useToast();
   const [tab, setTab] = useState<Tab>('gallery');
   const isUser = role === 'user' || role === 'admin';
+  const [lightboxData, setLightboxData] = useState<{ images: string[], index: number } | null>(null);
 
   // ── Work Type form ─────────────────────────────────────────────────────────
   const [editWt, setEditWt] = useState<Partial<WorkType> | null>(null);
@@ -156,7 +158,8 @@ export default function CommissionPage() {
                     <img
                       src={img.url} alt={img.caption}
                       className={img.isNSFW && role === 'guest' ? 'nsfw-blur' : ''}
-                      style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                      style={{ width: '100%', height: '100%', objectFit: 'cover', cursor: 'pointer' }}
+                      onClick={() => setLightboxData({ images: showcaseImages.map(img => img.url), index: showcaseImages.findIndex(i => i.id === img.id) })}
                     />
                     {img.isNSFW && <span className="badge badge-red" style={{ position: 'absolute', top: 8, right: 8 }}>NSFW</span>}
                   </div>
@@ -246,9 +249,9 @@ export default function CommissionPage() {
                   {wt.examples && wt.examples.length > 0 && (
                     <div style={{ display: 'flex', gap: '0.5rem', marginBottom: '1rem', flexWrap: 'wrap' }}>
                       {wt.examples.map((ex, i) => (
-                        <a key={i} href={ex} target="_blank" rel="noopener noreferrer" style={{ flex: '1 1 120px', height: 160, display: 'block', overflow: 'hidden', borderRadius: 8, border: '1px solid var(--border)' }}>
+                        <div key={i} onClick={() => setLightboxData({ images: wt.examples || [], index: i })} style={{ flex: '1 1 120px', height: 160, display: 'block', overflow: 'hidden', borderRadius: 8, border: '1px solid var(--border)', cursor: 'pointer' }}>
                           <img src={ex} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover', transition: 'transform 0.2s' }} onMouseOver={e => e.currentTarget.style.transform = 'scale(1.05)'} onMouseOut={e => e.currentTarget.style.transform = 'scale(1)'} />
-                        </a>
+                        </div>
                       ))}
                     </div>
                   )}
@@ -336,9 +339,9 @@ export default function CommissionPage() {
                   {sc.examples && sc.examples.length > 0 && (
                     <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap', marginTop: '0.75rem' }}>
                       {sc.examples.map((ex, i) => (
-                        <a key={i} href={ex} target="_blank" rel="noopener noreferrer" style={{ flex: '1 1 80px', height: 100, display: 'block', overflow: 'hidden', borderRadius: 6, border: '1px solid var(--border)' }}>
+                        <div key={i} onClick={() => setLightboxData({ images: sc.examples || [], index: i })} style={{ flex: '1 1 80px', height: 100, display: 'block', overflow: 'hidden', borderRadius: 6, border: '1px solid var(--border)', cursor: 'pointer' }}>
                           <img src={ex} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover', transition: 'transform 0.2s' }} onMouseOver={e => e.currentTarget.style.transform = 'scale(1.05)'} onMouseOut={e => e.currentTarget.style.transform = 'scale(1)'} />
-                        </a>
+                        </div>
                       ))}
                     </div>
                   )}
@@ -378,6 +381,14 @@ export default function CommissionPage() {
             </button>
           )}
         </div>
+      )}
+      
+      {lightboxData && (
+        <ImageLightbox 
+          images={lightboxData.images} 
+          initialIndex={lightboxData.index} 
+          onClose={() => setLightboxData(null)} 
+        />
       )}
     </div>
   );

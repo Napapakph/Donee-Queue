@@ -229,6 +229,52 @@ export default function SettingsPage() {
         </div>
       </div>
 
+      {/* Watermark */}
+      <div className="glass" style={{ padding: '1.5rem' }}>
+        <h2 style={{ fontWeight: 700, marginBottom: '1rem' }}>Image Watermark</h2>
+        <p style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', marginBottom: '1rem' }}>
+          Protect your artwork. The watermark is applied directly when guests view images in full screen.
+        </p>
+        
+        <div style={{ display: 'flex', gap: '0.5rem', marginBottom: '1rem' }}>
+          {(['none', 'text', 'image'] as const).map((t) => (
+            <button key={t} onClick={() => setD('watermarkType', t)}
+              className={draft.watermarkType === t ? 'btn btn-primary btn-sm' : 'btn btn-ghost btn-sm'}>
+              {t === 'none' ? 'Disabled' : t === 'text' ? 'Text Overlay' : 'Image Overlay'}
+            </button>
+          ))}
+        </div>
+
+        {draft.watermarkType === 'text' && (
+          <div className="form-group">
+            <label className="label">Watermark Text</label>
+            <input className="input" value={draft.watermarkText || ''} onChange={(e) => setD('watermarkText', e.target.value)} placeholder="e.g. DO NOT REPOST" />
+          </div>
+        )}
+
+        {draft.watermarkType === 'image' && (
+          <div className="form-group">
+            <label className="label">Watermark Image (PNG with transparency recommended)</label>
+            {draft.watermarkImage ? (
+              <div style={{ marginBottom: '0.5rem' }}>
+                <img src={draft.watermarkImage} style={{ height: 60, objectFit: 'contain', background: 'rgba(255,255,255,0.1)', padding: 4, borderRadius: 4 }} />
+                <button className="btn btn-ghost btn-sm" onClick={() => setD('watermarkImage', '')} style={{ display: 'block', marginTop: '0.5rem', color: 'var(--danger)' }}>Remove</button>
+              </div>
+            ) : (
+              <div>
+                <input type="file" accept="image/png, image/jpeg, image/webp" onChange={(e) => {
+                  const file = e.target.files?.[0];
+                  if (!file) return;
+                  const reader = new FileReader();
+                  reader.onload = (ev) => setD('watermarkImage', ev.target?.result as string);
+                  reader.readAsDataURL(file);
+                }} />
+              </div>
+            )}
+          </div>
+        )}
+      </div>
+
       {/* Locale */}
       <div className="glass" style={{ padding: '1.5rem' }}>
         <h2 style={{ fontWeight: 700, marginBottom: '1rem' }}>Locale & Format</h2>

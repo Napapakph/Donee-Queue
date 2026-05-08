@@ -9,6 +9,7 @@ import { useToast } from '@/components/ToastProvider';
 import type { QueueCard, ProgressStage, PaymentStatus } from '@/lib/types';
 import { QueueCardModal } from '@/components/QueueCardModal';
 import { CalendarView } from '@/components/CalendarView';
+import { ImageLightbox } from '@/components/ImageLightbox';
 
 type Category = 'all' | 'waiting' | 'working' | 'completed';
 type ViewMode = 'cards' | 'calendar';
@@ -45,6 +46,7 @@ export default function QueuePage() {
   const [showIncome, setShowIncome] = useState(true);
   const [filterPlatform, setFilterPlatform] = useState('');
   const [filterPayment, setFilterPayment] = useState('');
+  const [lightboxData, setLightboxData] = useState<{ images: string[], index: number } | null>(null);
 
   // ── Filtering ──────────────────────────────────────────────────────────────
   const filtered = queueCards
@@ -171,6 +173,7 @@ export default function QueuePage() {
                   onEdit={() => { setEditCard(card); setShowModal(true); }}
                   onDelete={() => { removeCard(card.id); toast('Commission removed', 'info'); }}
                   onStageChange={(s) => updateCardProgress(card.id, s)}
+                  onImageClick={(images, index) => setLightboxData({ images, index })}
                   isUser={isUser}
                 />
               ))}
@@ -185,18 +188,27 @@ export default function QueuePage() {
           onClose={() => { setShowModal(false); setEditCard(null); }}
         />
       )}
+
+      {lightboxData && (
+        <ImageLightbox 
+          images={lightboxData.images} 
+          initialIndex={lightboxData.index} 
+          onClose={() => setLightboxData(null)} 
+        />
+      )}
     </div>
   );
 }
 
 // ── Individual Queue Card ─────────────────────────────────────────────────────
 function CardItem({
-  card, onEdit, onDelete, onStageChange, isUser,
+  card, onEdit, onDelete, onStageChange, onImageClick, isUser,
 }: {
   card: QueueCard;
   onEdit: () => void;
   onDelete: () => void;
   onStageChange: (s: ProgressStage) => void;
+  onImageClick: (images: string[], index: number) => void;
   isUser: boolean;
 }) {
   const { workTypes, scaleTypes, platforms, settings } = useAppStore();
@@ -293,7 +305,9 @@ function CardItem({
         {card.images.length > 0 && (
           <div style={{ display: 'flex', gap: '0.4rem', marginBottom: '0.6rem', flexWrap: 'wrap' }}>
             {card.images.map((img, i) => (
-              <img key={i} src={img} alt="" style={{ width: 52, height: 52, borderRadius: 6, objectFit: 'cover', border: '1px solid var(--border)' }} />
+              <div key={i} onClick={() => onImageClick(card.images, i)} style={{ cursor: 'pointer', display: 'block', width: 52, height: 52, borderRadius: 6, overflow: 'hidden', border: '1px solid var(--border)' }}>
+                <img src={img} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+              </div>
             ))}
           </div>
         )}

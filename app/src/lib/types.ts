@@ -144,6 +144,10 @@ export interface AppSettings {
   defaultCardPublic: boolean;
   nsfwBlurForGuests: boolean;
   showIncomeSummaryToGuests: boolean;
+  // Watermark
+  watermarkType: 'none' | 'text' | 'image';
+  watermarkText?: string;
+  watermarkImage?: string;
 }
 
 // ─── Notification ─────────────────────────────────────────────────────────────

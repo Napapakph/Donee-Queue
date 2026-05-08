@@ -35,6 +35,8 @@ const defaultSettings: AppSettings = {
   defaultCardPublic: true,
   nsfwBlurForGuests: true,
   showIncomeSummaryToGuests: false,
+  watermarkType: 'none',
+  watermarkText: 'DO NOT REPOST',
 };
 
 const defaultProfile: UserProfile = {
