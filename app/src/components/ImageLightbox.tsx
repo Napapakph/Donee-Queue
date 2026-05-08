@@ -1,5 +1,6 @@
 'use client';
 import { useEffect, useRef, useState } from 'react';
+import { createPortal } from 'react-dom';
 import { X, ZoomIn, ZoomOut, ChevronLeft, ChevronRight } from 'lucide-react';
 import { useAppStore } from '@/lib/store';
 
@@ -84,10 +85,12 @@ export function ImageLightbox({ images, initialIndex = 0, onClose }: ImageLightb
   const handleNext = () => setCurrentIndex((i) => (i + 1) % images.length);
   const handlePrev = () => setCurrentIndex((i) => (i - 1 + images.length) % images.length);
 
-  return (
+  if (typeof document === 'undefined') return null;
+
+  return createPortal(
     <div style={{
-      position: 'fixed', inset: 0, zIndex: 9999,
-      background: 'rgba(0,0,0,0.9)', backdropFilter: 'blur(10px)',
+      position: 'fixed', inset: 0, zIndex: 999999,
+      background: 'rgba(0,0,0,0.85)', backdropFilter: 'blur(8px)',
       display: 'flex', alignItems: 'center', justifyContent: 'center',
       overflow: 'hidden'
     }}>
@@ -132,8 +135,11 @@ export function ImageLightbox({ images, initialIndex = 0, onClose }: ImageLightb
           transform: `translate(${pos.x}px, ${pos.y}px) scale(${scale})`,
           transition: isDragging ? 'none' : 'transform 0.15s ease-out',
           cursor: isDragging ? 'grabbing' : 'grab',
-          maxWidth: '90vw', maxHeight: '90vh',
+          maxWidth: '85vw', maxHeight: '80vh',
           display: 'flex', alignItems: 'center', justifyContent: 'center',
+          borderRadius: 12,
+          boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.5)',
+          overflow: 'hidden'
         }}
         onPointerDown={(e) => {
           setIsDragging(true);
@@ -154,8 +160,8 @@ export function ImageLightbox({ images, initialIndex = 0, onClose }: ImageLightb
           style={{ 
             maxWidth: '100%', maxHeight: '100%', 
             objectFit: 'contain', 
-            boxShadow: '0 20px 60px rgba(0,0,0,0.5)',
-            pointerEvents: 'none' // allow parent to handle drag
+            pointerEvents: 'none', // allow parent to handle drag
+            display: 'block'
           }} 
           onContextMenu={(e) => {
              // Let them save if they want, it will have the watermark!
@@ -168,6 +174,7 @@ export function ImageLightbox({ images, initialIndex = 0, onClose }: ImageLightb
           {currentIndex + 1} / {images.length}
         </div>
       )}
-    </div>
+    </div>,
+    document.body
   );
 }
