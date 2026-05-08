@@ -18,6 +18,7 @@ export interface ScaleType {
   priceModifier: number;
   priceModifierType: 'flat' | 'percentage';
   durationModifierDays: number;
+  examples?: string[];
 }
 
 export type CommissionStatus = 'open' | 'closed' | 'waitlist';
@@ -117,6 +118,7 @@ export interface AppSettings {
   // Theme
   accentColor: string;
   secondaryColor: string;
+  textColor: string;
   theme: 'dark' | 'light' | 'system';
   presetTheme: string;
   // Background

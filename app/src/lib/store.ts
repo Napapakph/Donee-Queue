@@ -15,6 +15,7 @@ function uid() {
 const defaultSettings: AppSettings = {
   accentColor: '#a855f7',
   secondaryColor: '#6366f1',
+  textColor: '#ffffff',
   theme: 'dark',
   presetTheme: 'midnight-purple',
   bgType: 'gradient',

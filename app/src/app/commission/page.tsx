@@ -21,7 +21,7 @@ export default function CommissionPage() {
   // ── Work Type form ─────────────────────────────────────────────────────────
   const [editWt, setEditWt] = useState<Partial<WorkType> | null>(null);
   const [showWtForm, setShowWtForm] = useState(false);
-  const emptyWt = (): Partial<WorkType> => ({ name: '', description: '', basePrice: 0, estimatedDurationDays: 1, visible: true });
+  const emptyWt = (): Partial<WorkType> => ({ name: '', description: '', basePrice: 0, estimatedDurationDays: 1, visible: true, examples: [] });
 
   const saveWt = () => {
     if (!editWt?.name) return toast('Name required', 'error');
@@ -38,7 +38,7 @@ export default function CommissionPage() {
   // ── Scale Type form ────────────────────────────────────────────────────────
   const [editSc, setEditSc] = useState<Partial<ScaleType> | null>(null);
   const [showScForm, setShowScForm] = useState(false);
-  const emptySc = (): Partial<ScaleType> => ({ name: '', priceModifier: 0, priceModifierType: 'percentage', durationModifierDays: 0 });
+  const emptySc = (): Partial<ScaleType> => ({ name: '', priceModifier: 0, priceModifierType: 'percentage', durationModifierDays: 0, examples: [] });
 
   const saveSc = () => {
     if (!editSc?.name) return toast('Name required', 'error');
@@ -61,6 +61,26 @@ export default function CommissionPage() {
     reader.onload = (ev) => {
       addShowcaseImage({ url: ev.target?.result as string, caption: file.name, isNSFW: false });
       toast('Image added to gallery', 'success');
+    };
+    reader.readAsDataURL(file);
+  };
+
+  const handleWtExampleUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = (ev) => {
+      setEditWt((prev) => prev ? { ...prev, examples: [...(prev.examples || []), ev.target?.result as string] } : prev);
+    };
+    reader.readAsDataURL(file);
+  };
+
+  const handleScExampleUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = (ev) => {
+      setEditSc((prev) => prev ? { ...prev, examples: [...(prev.examples || []), ev.target?.result as string] } : prev);
     };
     reader.readAsDataURL(file);
   };
@@ -193,6 +213,22 @@ export default function CommissionPage() {
                     <label className="label">Description</label>
                     <input className="input" value={editWt.description || ''} onChange={(e) => setEditWt({ ...editWt, description: e.target.value })} placeholder="Short description..." />
                   </div>
+                  <div className="form-group" style={{ gridColumn: '1/-1' }}>
+                    <label className="label">Example Images</label>
+                    <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
+                      {editWt.examples?.map((ex, i) => (
+                        <div key={i} style={{ position: 'relative', width: 60, height: 60 }}>
+                          <img src={ex} style={{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: 6 }} />
+                          <button className="btn-icon btn-danger" style={{ position: 'absolute', top: -4, right: -4, padding: 2, background: 'var(--bg-primary)' }}
+                            onClick={() => setEditWt({ ...editWt, examples: editWt.examples?.filter((_, idx) => idx !== i) })}><X size={10} /></button>
+                        </div>
+                      ))}
+                      <label style={{ width: 60, height: 60, border: '1px dashed var(--border)', borderRadius: 6, display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }}>
+                        <input type="file" accept="image/*" style={{ display: 'none' }} onChange={handleWtExampleUpload} />
+                        <Plus size={16} />
+                      </label>
+                    </div>
+                  </div>
                 </div>
                 <div style={{ display: 'flex', gap: '0.5rem', marginTop: '0.75rem' }}>
                   <button className="btn btn-primary btn-sm" onClick={saveWt}><Check size={14} /> Save</button>
@@ -207,6 +243,15 @@ export default function CommissionPage() {
                   {!wt.visible && <span className="badge badge-gray" style={{ position: 'absolute', top: 10, right: 10 }}><EyeOff size={10} /> Hidden</span>}
                   <div className="gradient-text" style={{ fontWeight: 700, fontSize: '1.05rem', marginBottom: '0.25rem' }}>{wt.name}</div>
                   {wt.description && <p style={{ color: 'var(--text-secondary)', fontSize: '0.82rem', marginBottom: '0.75rem' }}>{wt.description}</p>}
+                  {wt.examples && wt.examples.length > 0 && (
+                    <div style={{ display: 'flex', gap: '0.4rem', marginBottom: '0.75rem', flexWrap: 'wrap' }}>
+                      {wt.examples.map((ex, i) => (
+                        <a key={i} href={ex} target="_blank" rel="noopener noreferrer">
+                          <img src={ex} alt="" style={{ width: 44, height: 44, objectFit: 'cover', borderRadius: 6, border: '1px solid var(--border)' }} />
+                        </a>
+                      ))}
+                    </div>
+                  )}
                   <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
                     <span style={{ fontWeight: 700, color: 'var(--accent)', fontSize: '1.2rem' }}>{settings.currency}{wt.basePrice.toLocaleString()}</span>
                     <span style={{ fontSize: '0.78rem', color: 'var(--text-muted)' }}>~{wt.estimatedDurationDays} day{wt.estimatedDurationDays > 1 ? 's' : ''}</span>
@@ -256,6 +301,22 @@ export default function CommissionPage() {
                     <label className="label">+Days</label>
                     <input className="input" type="number" value={editSc.durationModifierDays || 0} onChange={(e) => setEditSc({ ...editSc, durationModifierDays: +e.target.value })} />
                   </div>
+                  <div className="form-group" style={{ gridColumn: '1/-1' }}>
+                    <label className="label">Example Images</label>
+                    <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
+                      {editSc.examples?.map((ex, i) => (
+                        <div key={i} style={{ position: 'relative', width: 60, height: 60 }}>
+                          <img src={ex} style={{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: 6 }} />
+                          <button className="btn-icon btn-danger" style={{ position: 'absolute', top: -4, right: -4, padding: 2, background: 'var(--bg-primary)' }}
+                            onClick={() => setEditSc({ ...editSc, examples: editSc.examples?.filter((_, idx) => idx !== i) })}><X size={10} /></button>
+                        </div>
+                      ))}
+                      <label style={{ width: 60, height: 60, border: '1px dashed var(--border)', borderRadius: 6, display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }}>
+                        <input type="file" accept="image/*" style={{ display: 'none' }} onChange={handleScExampleUpload} />
+                        <Plus size={16} />
+                      </label>
+                    </div>
+                  </div>
                 </div>
                 <div style={{ display: 'flex', gap: '0.5rem', marginTop: '0.75rem' }}>
                   <button className="btn btn-primary btn-sm" onClick={saveSc}><Check size={14} /> Save</button>
@@ -268,10 +329,19 @@ export default function CommissionPage() {
               {scaleTypes.map((sc) => (
                 <div key={sc.id} className="glass" style={{ padding: '1rem' }}>
                   <div style={{ fontWeight: 700, marginBottom: '0.25rem' }}>{sc.name}</div>
-                  <div style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>
+                  <div style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', marginBottom: '0.5rem' }}>
                     {sc.priceModifier >= 0 ? '+' : ''}{sc.priceModifier}{sc.priceModifierType === 'percentage' ? '%' : settings.currency}
                     {sc.durationModifierDays !== 0 && ` · ${sc.durationModifierDays > 0 ? '+' : ''}${sc.durationModifierDays} day${Math.abs(sc.durationModifierDays) > 1 ? 's' : ''}`}
                   </div>
+                  {sc.examples && sc.examples.length > 0 && (
+                    <div style={{ display: 'flex', gap: '0.4rem', flexWrap: 'wrap' }}>
+                      {sc.examples.map((ex, i) => (
+                        <a key={i} href={ex} target="_blank" rel="noopener noreferrer">
+                          <img src={ex} alt="" style={{ width: 36, height: 36, objectFit: 'cover', borderRadius: 4, border: '1px solid var(--border)' }} />
+                        </a>
+                      ))}
+                    </div>
+                  )}
                   {isUser && (
                     <div style={{ display: 'flex', gap: '0.5rem', marginTop: '0.6rem' }}>
                       <button className="btn-icon" onClick={() => { setEditSc({ ...sc }); setShowScForm(true); }}><Edit2 size={12} /></button>

@@ -37,9 +37,46 @@ export default function HomePage() {
         <h1 style={{ fontSize: 'clamp(2rem,5vw,3.5rem)', fontWeight: 800, letterSpacing: '-0.03em', marginBottom: '0.75rem' }}>
           <span className="gradient-text">{profile.displayName}</span>
         </h1>
-        <p style={{ color: 'var(--text-secondary)', fontSize: '1.1rem', maxWidth: 500, margin: '0 auto 2rem' }}>
+        <p style={{ color: 'var(--text-secondary)', fontSize: '1.1rem', maxWidth: 500, margin: '0 auto 1.5rem', lineHeight: 1.6 }}>
           {profile.bio}
         </p>
+
+        {/* Contact Channels */}
+        {profile.contactChannels?.filter(c => c.visible).length > 0 && (
+          <div style={{ display: 'flex', gap: '0.75rem', justifyContent: 'center', flexWrap: 'wrap', marginBottom: '2.5rem' }}>
+            {profile.contactChannels.filter(c => c.visible).map(ch => {
+              const icons: Record<string, string> = {
+                vgen: '🎨', gumroad: '🛍️', kofi: '☕', patreon: '🎭', facebook: '📘',
+                deviantart: '🌀', x: '✖️', instagram: '📸', bluesky: '🦋', pixiv: '🖼️',
+                artstation: '🎭', discord: '💬', email: '✉️', website: '🌐',
+                youtube: '▶️', tiktok: '🎵', twitch: '🟣', custom: '🔗'
+              };
+              const icon = icons[ch.platform] || '🔗';
+              return (
+                <a key={ch.id} href={ch.url} target="_blank" rel="noopener noreferrer"
+                  className="glass"
+                  style={{
+                    display: 'flex', alignItems: 'center', gap: '0.4rem',
+                    padding: '0.4rem 0.8rem', borderRadius: 99,
+                    color: 'var(--text-primary)', textDecoration: 'none',
+                    fontSize: '0.9rem', fontWeight: 600,
+                    transition: 'all 0.2s',
+                  }}
+                  onMouseEnter={(e) => {
+                    e.currentTarget.style.borderColor = 'var(--accent)';
+                    e.currentTarget.style.background = 'rgba(168,85,247,0.1)';
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.borderColor = 'var(--border)';
+                    e.currentTarget.style.background = 'rgba(255,255,255,0.03)';
+                  }}
+                >
+                  <span style={{ fontSize: '1rem' }}>{icon}</span> {ch.label || ch.platform.charAt(0).toUpperCase() + ch.platform.slice(1)}
+                </a>
+              );
+            })}
+          </div>
+        )}
 
         <div style={{ display: 'flex', gap: '0.75rem', justifyContent: 'center', flexWrap: 'wrap' }}>
           <Link href="/commission" className="btn btn-primary" style={{ gap: '0.5rem' }}>

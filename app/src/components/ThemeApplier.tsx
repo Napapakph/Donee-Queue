@@ -11,6 +11,11 @@ export function ThemeApplier() {
     // Apply CSS custom properties
     root.style.setProperty('--accent', settings.accentColor);
     root.style.setProperty('--secondary', settings.secondaryColor);
+    if (settings.textColor) {
+      root.style.setProperty('--text-primary', settings.textColor);
+      // Derive a slightly dimmer secondary text color
+      root.style.setProperty('--text-secondary', `${settings.textColor}b3`); // 70% opacity
+    }
 
     // Derive glow from accent
     const hexToRgb = (hex: string) => {
@@ -35,6 +40,10 @@ export function ThemeApplier() {
     } else {
       bg = `linear-gradient(135deg, ${settings.bgColor1} 0%, ${settings.bgColor2} 100%)`;
     }
+    // Set background variables for other components (like modals) to use
+    root.style.setProperty('--bg-primary', settings.bgColor1);
+    root.style.setProperty('--bg-secondary', settings.bgColor2);
+
     document.body.style.background = bg;
     document.body.style.backgroundAttachment = 'fixed';
 

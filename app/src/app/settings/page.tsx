@@ -119,6 +119,7 @@ export default function SettingsPage() {
           {[
             { label: 'Accent Color', key: 'accentColor' as keyof AppSettings },
             { label: 'Secondary Color', key: 'secondaryColor' as keyof AppSettings },
+            { label: 'Text Color', key: 'textColor' as keyof AppSettings },
             { label: 'Background Color 1', key: 'bgColor1' as keyof AppSettings },
             { label: 'Background Color 2', key: 'bgColor2' as keyof AppSettings },
           ].map(({ label, key }) => (

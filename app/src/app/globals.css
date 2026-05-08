@@ -234,7 +234,7 @@ body {
   padding-right: 2.2rem;
 }
 
-.select option { background: #1a0a2e; color: var(--text-primary); }
+.select option { background: var(--bg-secondary); color: var(--text-primary); }
 
 .textarea { resize: vertical; min-height: 80px; }
 
@@ -339,8 +339,8 @@ body {
 }
 
 .modal {
-  background: #160d28;
-  border: 1px solid rgba(168,85,247,0.25);
+  background: var(--bg-primary);
+  border: 1px solid var(--accent-glow);
   border-radius: var(--radius-lg);
   width: 100%;
   max-width: 600px;
