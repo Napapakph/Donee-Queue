@@ -1,13 +1,14 @@
 'use client';
 import Link from 'next/link';
-import { usePathname } from 'next/navigation';
+import { usePathname, useParams } from 'next/navigation';
 import { useState } from 'react';
 import {
   Palette, LayoutDashboard, BarChart3, Settings, User,
-  Bell, ShieldCheck, Menu, X, ChevronDown, LogIn, LogOut, Star
+  Bell, ShieldCheck, Menu, X, ChevronDown, LogIn, LogOut, Star, Share2
 } from 'lucide-react';
 import { useAppStore } from '@/lib/store';
 import { useAuth } from '@/components/AuthProvider';
+import { useToast } from '@/components/ToastProvider';
 
 const navLinks = [
   { href: '/commission', label: 'Commission Art', icon: Palette },
@@ -18,8 +19,10 @@ const navLinks = [
 
 export function TopBar() {
   const pathname = usePathname();
+  const { slug } = useParams() || {};
   const { role, setRole, profile, notifications } = useAppStore();
   const { user, signOut } = useAuth();
+  const { toast } = useToast();
   const [mobileOpen, setMobileOpen] = useState(false);
   const [profileOpen, setProfileOpen] = useState(false);
 
@@ -61,9 +64,10 @@ export function TopBar() {
           <div style={{ display: 'flex', alignItems: 'center', gap: '0.25rem', flex: 1, justifyContent: 'center' }}
             className="desktop-nav">
             {visibleLinks.map(({ href, label, icon: Icon }) => {
-              const active = pathname.startsWith(href);
+              const targetHref = slug ? `/${slug as string}${href}` : href;
+              const active = pathname === targetHref || pathname.startsWith(`${targetHref}/`);
               return (
-                <Link key={href} href={href} style={{
+                <Link key={href} href={targetHref} style={{
                   display: 'flex', alignItems: 'center', gap: '0.4rem',
                   padding: '0.45rem 0.9rem',
                   borderRadius: 8,
@@ -96,6 +100,23 @@ export function TopBar() {
 
           {/* Right side */}
           <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+            {/* Share Link */}
+            {isUser && (
+              <button
+                className="btn btn-ghost btn-sm"
+                style={{ gap: '0.4rem', padding: '0.35rem 0.6rem' }}
+                onClick={() => {
+                  const shareName = profile.displayName.replace(/\s+/g, '') || 'Donee';
+                  const link = `${window.location.origin}/${shareName}`;
+                  navigator.clipboard.writeText(link);
+                  toast('Copied public link!', 'success');
+                }}
+                title="Copy public link for guests"
+              >
+                <Share2 size={14} /> <span className="desktop-nav">Share</span>
+              </button>
+            )}
+
             {/* Login button (guest) */}
             {!user && (
               <Link href="/auth/login" className="btn btn-primary btn-sm" style={{ gap: '0.4rem', textDecoration: 'none' }}>
@@ -224,17 +245,20 @@ export function TopBar() {
             <div style={{ padding: '0.5rem 0 1rem', borderBottom: '1px solid var(--border)', marginBottom: '0.5rem' }}>
               <span className="gradient-text" style={{ fontWeight: 800 }}>{profile.displayName}</span>
             </div>
-            {visibleLinks.map(({ href, label, icon: Icon }) => (
-              <Link key={href} href={href} onClick={() => setMobileOpen(false)} style={{
+            {visibleLinks.map(({ href, label, icon: Icon }) => {
+              const targetHref = slug ? `/${slug as string}${href}` : href;
+              const active = pathname === targetHref || pathname.startsWith(`${targetHref}/`);
+              return (
+              <Link key={href} href={targetHref} onClick={() => setMobileOpen(false)} style={{
                 display: 'flex', alignItems: 'center', gap: '0.6rem',
                 padding: '0.7rem 0.8rem', borderRadius: 8,
-                color: pathname.startsWith(href) ? 'var(--accent)' : 'var(--text-secondary)',
+                color: active ? 'var(--accent)' : 'var(--text-secondary)',
                 textDecoration: 'none', fontSize: '0.9rem', fontWeight: 600,
-                background: pathname.startsWith(href) ? 'rgba(168,85,247,0.1)' : 'transparent',
+                background: active ? 'rgba(168,85,247,0.1)' : 'transparent',
               }}>
                 <Icon size={16} /> {label}
               </Link>
-            ))}
+            )})}
           </nav>
         </div>
       )}
