@@ -153,7 +153,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     supabase.auth.getUser().then(({ data: { user: u } }) => {
       setUser(u);
       if (u) {
-        setRole('user');
+        setRole('admin');
         syncFromSupabase();
       }
       setLoading(false);
@@ -162,7 +162,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const { data: listener } = supabase.auth.onAuthStateChange((_event, session) => {
       const u = session?.user ?? null;
       setUser(u);
-      setRole(u ? 'user' : 'guest');
+      setRole(u ? 'admin' : 'guest');
       if (u) syncFromSupabase();
     });
 
