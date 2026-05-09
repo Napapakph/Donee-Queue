@@ -249,16 +249,17 @@ export function TopBar() {
               const targetHref = slug ? `/${slug as string}${href}` : href;
               const active = pathname === targetHref || pathname.startsWith(`${targetHref}/`);
               return (
-              <Link key={href} href={targetHref} onClick={() => setMobileOpen(false)} style={{
-                display: 'flex', alignItems: 'center', gap: '0.6rem',
-                padding: '0.7rem 0.8rem', borderRadius: 8,
-                color: active ? 'var(--accent)' : 'var(--text-secondary)',
-                textDecoration: 'none', fontSize: '0.9rem', fontWeight: 600,
-                background: active ? 'rgba(168,85,247,0.1)' : 'transparent',
-              }}>
-                <Icon size={16} /> {label}
-              </Link>
-            )})}
+                <Link key={href} href={targetHref} onClick={() => setMobileOpen(false)} style={{
+                  display: 'flex', alignItems: 'center', gap: '0.6rem',
+                  padding: '0.7rem 0.8rem', borderRadius: 8,
+                  color: active ? 'var(--accent)' : 'var(--text-secondary)',
+                  textDecoration: 'none', fontSize: '0.9rem', fontWeight: 600,
+                  background: active ? 'rgba(168,85,247,0.1)' : 'transparent',
+                }}>
+                  <Icon size={16} /> {label}
+                </Link>
+              )
+            })}
           </nav>
         </div>
       )}

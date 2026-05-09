@@ -91,12 +91,12 @@ interface AppState {
 
   // Commission Art
   workTypes: WorkType[];
-  addWorkType: (w: Omit<WorkType, 'id'>) => void;
+  addWorkType: (w: Omit<WorkType, 'id'> & { id?: string }) => void;
   updateWorkType: (id: string, w: Partial<WorkType>) => void;
   removeWorkType: (id: string) => void;
 
   scaleTypes: ScaleType[];
-  addScaleType: (s: Omit<ScaleType, 'id'>) => void;
+  addScaleType: (s: Omit<ScaleType, 'id'> & { id?: string }) => void;
   updateScaleType: (id: string, s: Partial<ScaleType>) => void;
   removeScaleType: (id: string) => void;
 
@@ -105,7 +105,7 @@ interface AppState {
   tos: string;
   setTos: (t: string) => void;
   showcaseImages: { id: string; url: string; caption: string; workTypeTag?: string; isNSFW: boolean }[];
-  addShowcaseImage: (img: { url: string; caption: string; workTypeTag?: string; isNSFW: boolean }) => void;
+  addShowcaseImage: (img: { url: string; caption: string; workTypeTag?: string; isNSFW: boolean; id?: string }) => void;
   removeShowcaseImage: (id: string) => void;
 
   // Platforms
@@ -180,7 +180,7 @@ export const useAppStore = create<AppState>()(
 
       // ── Work Types ──
       workTypes: seedWorkTypes,
-      addWorkType: (w) => set((s) => ({ workTypes: [...s.workTypes, { ...w, id: uid() }] })),
+      addWorkType: (w) => set((s) => ({ workTypes: [...s.workTypes, { id: uid(), ...w }] })),
       updateWorkType: (id, w) => set((s) => ({
         workTypes: s.workTypes.map((t) => (t.id === id ? { ...t, ...w } : t)),
       })),
@@ -188,7 +188,7 @@ export const useAppStore = create<AppState>()(
 
       // ── Scale Types ──
       scaleTypes: seedScaleTypes,
-      addScaleType: (sc) => set((s) => ({ scaleTypes: [...s.scaleTypes, { ...sc, id: uid() }] })),
+      addScaleType: (sc) => set((s) => ({ scaleTypes: [...s.scaleTypes, { id: uid(), ...sc }] })),
       updateScaleType: (id, sc) => set((s) => ({
         scaleTypes: s.scaleTypes.map((t) => (t.id === id ? { ...t, ...sc } : t)),
       })),
@@ -201,7 +201,7 @@ export const useAppStore = create<AppState>()(
       setTos: (t) => set({ tos: t }),
       showcaseImages: [],
       addShowcaseImage: (img) => set((s) => ({
-        showcaseImages: [...s.showcaseImages, { ...img, id: uid() }],
+        showcaseImages: [...s.showcaseImages, { id: uid(), ...img }],
       })),
       removeShowcaseImage: (id) => set((s) => ({
         showcaseImages: s.showcaseImages.filter((i) => i.id !== id),

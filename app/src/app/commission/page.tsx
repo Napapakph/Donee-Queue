@@ -3,6 +3,7 @@ import { useState, useRef } from 'react';
 import { Plus, Trash2, Edit2, Check, X, Upload, Eye, EyeOff, Image, BookOpen } from 'lucide-react';
 import { useAppStore } from '@/lib/store';
 import { useToast } from '@/components/ToastProvider';
+import { createClient } from '@/lib/supabase/client';
 import { ImageLightbox } from '@/components/ImageLightbox';
 import { ImageCropperModal } from '@/components/ImageCropperModal';
 import { parseExample, type WorkType, type ScaleType, type CommissionStatus } from '@/lib/types';
@@ -19,6 +20,7 @@ export default function CommissionPage() {
   const { toast } = useToast();
   const [tab, setTab] = useState<Tab>('gallery');
   const isUser = role === 'user' || role === 'admin';
+  const supabase = createClient();
   const [lightboxData, setLightboxData] = useState<{ images: string[], index: number } | null>(null);
   const [cropModalData, setCropModalData] = useState<{ src: string, aspectRatio?: number, onDone: (res: { full: string, thumb: string }) => void } | null>(null);
 
@@ -27,13 +29,28 @@ export default function CommissionPage() {
   const [showWtForm, setShowWtForm] = useState(false);
   const emptyWt = (): Partial<WorkType> => ({ name: '', description: '', basePrice: 0, estimatedDurationDays: 1, visible: true, examples: [] });
 
-  const saveWt = () => {
+  const saveWt = async () => {
     if (!editWt?.name) return toast('Name required', 'error');
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) { toast('Not logged in', 'error'); return; }
+
     if (editWt.id) {
+      await supabase.from('work_types').update({
+        name: editWt.name, description: editWt.description,
+        base_price: editWt.basePrice, estimated_duration_days: editWt.estimatedDurationDays,
+        visible: editWt.visible, examples: editWt.examples
+      }).eq('id', editWt.id);
       updateWorkType(editWt.id, editWt);
       toast('Work type updated', 'success');
     } else {
-      addWorkType(editWt as Omit<WorkType, 'id'>);
+      const { data, error } = await supabase.from('work_types').insert({
+        user_id: user.id,
+        name: editWt.name, description: editWt.description,
+        base_price: editWt.basePrice, estimated_duration_days: editWt.estimatedDurationDays,
+        visible: editWt.visible, examples: editWt.examples
+      }).select('id').single();
+      if (error) { toast('Error saving work type', 'error'); return; }
+      addWorkType({ ...(editWt as Omit<WorkType, 'id'>), id: data.id });
       toast('Work type added', 'success');
     }
     setEditWt(null); setShowWtForm(false);
@@ -44,13 +61,28 @@ export default function CommissionPage() {
   const [showScForm, setShowScForm] = useState(false);
   const emptySc = (): Partial<ScaleType> => ({ name: '', priceModifier: 0, priceModifierType: 'percentage', durationModifierDays: 0, examples: [] });
 
-  const saveSc = () => {
+  const saveSc = async () => {
     if (!editSc?.name) return toast('Name required', 'error');
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return;
+
     if (editSc.id) {
+      await supabase.from('scale_types').update({
+        name: editSc.name, price_modifier: editSc.priceModifier,
+        price_modifier_type: editSc.priceModifierType, duration_modifier_days: editSc.durationModifierDays,
+        examples: editSc.examples
+      }).eq('id', editSc.id);
       updateScaleType(editSc.id, editSc);
       toast('Scale type updated', 'success');
     } else {
-      addScaleType(editSc as Omit<ScaleType, 'id'>);
+      const { data, error } = await supabase.from('scale_types').insert({
+        user_id: user.id,
+        name: editSc.name, price_modifier: editSc.priceModifier,
+        price_modifier_type: editSc.priceModifierType, duration_modifier_days: editSc.durationModifierDays,
+        examples: editSc.examples
+      }).select('id').single();
+      if (error) { toast('Error saving scale type', 'error'); return; }
+      addScaleType({ ...(editSc as Omit<ScaleType, 'id'>), id: data.id });
       toast('Scale type added', 'success');
     }
     setEditSc(null); setShowScForm(false);
@@ -62,9 +94,18 @@ export default function CommissionPage() {
     const file = e.target.files?.[0];
     if (!file) return;
     const reader = new FileReader();
-    reader.onload = (ev) => {
-      addShowcaseImage({ url: ev.target?.result as string, caption: file.name, isNSFW: false });
-      toast('Image added to gallery', 'success');
+    reader.onload = async (ev) => {
+      const url = ev.target?.result as string;
+      const { data: { user } } = await supabase.auth.getUser();
+      if (user) {
+        const { data } = await supabase.from('showcase_images').insert({
+          user_id: user.id, url, caption: file.name, is_nsfw: false
+        }).select('id').single();
+        if (data) {
+          addShowcaseImage({ id: data.id, url, caption: file.name, isNSFW: false });
+          toast('Image added to gallery', 'success');
+        }
+      }
     };
     reader.readAsDataURL(file);
   };
@@ -135,7 +176,12 @@ export default function CommissionPage() {
           {isUser && (
             <select className="select" style={{ width: 'auto', fontSize: '0.8rem' }}
               value={commissionStatus}
-              onChange={(e) => setCommissionStatus(e.target.value as CommissionStatus)}
+              onChange={async (e) => {
+                const val = e.target.value as CommissionStatus;
+                setCommissionStatus(val);
+                const { data: { user } } = await supabase.auth.getUser();
+                if (user) await supabase.from('profiles').update({ commission_status: val }).eq('id', user.id);
+              }}
             >
               <option value="open">Open</option>
               <option value="closed">Closed</option>
@@ -185,7 +231,10 @@ export default function CommissionPage() {
                     </p>
                   </div>
                   {isUser && (
-                    <button onClick={() => removeShowcaseImage(img.id)} className="btn-icon"
+                    <button onClick={async () => {
+                      await supabase.from('showcase_images').delete().eq('id', img.id);
+                      removeShowcaseImage(img.id);
+                    }} className="btn-icon"
                       style={{ position: 'absolute', top: 8, left: 8, background: 'rgba(0,0,0,0.6)', border: 'none' }}>
                       <Trash2 size={12} />
                     </button>
@@ -282,8 +331,14 @@ export default function CommissionPage() {
                   {isUser && (
                     <div style={{ display: 'flex', gap: '0.5rem', marginTop: '0.75rem' }}>
                       <button className="btn-icon" onClick={() => { setEditWt({ ...wt }); setShowWtForm(true); }}><Edit2 size={12} /></button>
-                      <button className="btn-icon" onClick={() => updateWorkType(wt.id, { visible: !wt.visible })}>{wt.visible ? <EyeOff size={12} /> : <Eye size={12} />}</button>
-                      <button className="btn-icon btn-danger" onClick={() => { removeWorkType(wt.id); toast('Deleted', 'info'); }}><Trash2 size={12} /></button>
+                      <button className="btn-icon" onClick={async () => {
+                        await supabase.from('work_types').update({ visible: !wt.visible }).eq('id', wt.id);
+                        updateWorkType(wt.id, { visible: !wt.visible });
+                      }}>{wt.visible ? <EyeOff size={12} /> : <Eye size={12} />}</button>
+                      <button className="btn-icon btn-danger" onClick={async () => {
+                        await supabase.from('work_types').delete().eq('id', wt.id);
+                        removeWorkType(wt.id); toast('Deleted', 'info');
+                      }}><Trash2 size={12} /></button>
                     </div>
                   )}
                 </div>
@@ -372,7 +427,10 @@ export default function CommissionPage() {
                   {isUser && (
                     <div style={{ display: 'flex', gap: '0.5rem', marginTop: '0.6rem' }}>
                       <button className="btn-icon" onClick={() => { setEditSc({ ...sc }); setShowScForm(true); }}><Edit2 size={12} /></button>
-                      <button className="btn-icon btn-danger" onClick={() => removeScaleType(sc.id)}><Trash2 size={12} /></button>
+                      <button className="btn-icon btn-danger" onClick={async () => {
+                        await supabase.from('scale_types').delete().eq('id', sc.id);
+                        removeScaleType(sc.id);
+                      }}><Trash2 size={12} /></button>
                     </div>
                   )}
                 </div>
@@ -400,8 +458,14 @@ export default function CommissionPage() {
           )}
           {isUser && (
             <button className="btn btn-primary btn-sm" style={{ marginTop: '0.75rem' }}
-              onClick={() => toast('TOS saved', 'success')}>
-              <Check size={14} /> Saved Automatically
+              onClick={async () => {
+                const { data: { user } } = await supabase.auth.getUser();
+                if (user) {
+                  await supabase.from('profiles').update({ tos }).eq('id', user.id);
+                  toast('TOS saved to Database', 'success');
+                }
+              }}>
+              <Check size={14} /> Save TOS
             </button>
           )}
         </div>

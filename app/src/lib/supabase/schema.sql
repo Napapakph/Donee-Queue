@@ -27,6 +27,7 @@ create table if not exists work_types (
   base_price numeric default 0,
   estimated_duration_days int default 1,
   visible boolean default true,
+  examples jsonb default '[]'::jsonb,
   created_at timestamptz default now()
 );
 
@@ -37,7 +38,8 @@ create table if not exists scale_types (
   name text not null,
   price_modifier numeric default 0,
   price_modifier_type text default 'percentage',
-  duration_modifier_days int default 0
+  duration_modifier_days int default 0,
+  examples jsonb default '[]'::jsonb
 );
 
 -- ── Platforms ─────────────────────────────────────────────────────────────────

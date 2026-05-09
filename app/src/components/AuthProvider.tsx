@@ -59,6 +59,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         workTypes: wts.map((w: any) => ({
           id: w.id, name: w.name, description: w.description,
           basePrice: w.base_price, estimatedDurationDays: w.estimated_duration_days, visible: w.visible,
+          examples: w.examples || [],
         })),
       });
     }
@@ -70,6 +71,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         scaleTypes: scs.map((s: any) => ({
           id: s.id, name: s.name, priceModifier: s.price_modifier,
           priceModifierType: s.price_modifier_type, durationModifierDays: s.duration_modifier_days,
+          examples: s.examples || [],
         })),
       });
     }
@@ -78,6 +80,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const { data: plats } = await supabase.from('platforms').select('*').eq('user_id', u.id);
     if (plats?.length) {
       useAppStore.setState({ platforms: plats.map((p: any) => ({ id: p.id, name: p.name })) });
+    }
+
+    // Showcase images
+    const { data: images } = await supabase.from('showcase_images').select('*').eq('user_id', u.id).order('sort_order', { ascending: true });
+    if (images) {
+      useAppStore.setState({
+        showcaseImages: images.map((i: any) => ({
+          id: i.id, url: i.url, caption: i.caption, workTypeTag: i.work_type_tag, isNSFW: i.is_nsfw,
+        })),
+      });
     }
 
     // Queue cards
