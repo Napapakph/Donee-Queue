@@ -235,15 +235,43 @@ export function QueueCardModal({ card, onClose }: Props) {
           {/* Payment Status */}
           <div className="form-group">
             <label className="label">Payment Status</label>
-            <div style={{ display: 'flex', gap: '0.75rem' }}>
-              {(['unpaid', 'deposit', 'paid'] as PaymentStatus[]).map((s) => (
-                <label key={s} style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', cursor: 'pointer', fontSize: '0.875rem' }}>
-                  <input type="radio" name="payment" value={s} checked={form.paymentStatus === s}
-                    onChange={() => set('paymentStatus', s)}
-                    style={{ accentColor: 'var(--accent)' }} />
-                  {s === 'unpaid' ? 'Unpaid' : s === 'deposit' ? '50% Deposit' : 'Fully Paid'}
-                </label>
-              ))}
+            <div style={{ 
+              display: 'flex', 
+              gap: '0.4rem', 
+              background: 'rgba(255,255,255,0.03)', 
+              padding: '0.35rem', 
+              borderRadius: '12px',
+              border: '1px solid rgba(255,255,255,0.05)'
+            }}>
+              {(['unpaid', 'deposit', 'paid'] as PaymentStatus[]).map((s) => {
+                const isActive = form.paymentStatus === s;
+                const labels: Record<string, string> = { unpaid: 'Unpaid', deposit: '50% Deposit', paid: 'Fully Paid' };
+                const colors: Record<string, string> = { unpaid: 'var(--danger)', deposit: 'var(--warning)', paid: 'var(--success)' };
+                
+                return (
+                  <button
+                    key={s}
+                    type="button"
+                    onClick={() => set('paymentStatus', s)}
+                    style={{
+                      flex: 1,
+                      padding: '0.65rem 0.5rem',
+                      borderRadius: '8px',
+                      border: 'none',
+                      fontSize: '0.85rem',
+                      fontWeight: isActive ? 800 : 500,
+                      cursor: 'pointer',
+                      transition: 'all 0.2s cubic-bezier(0.4, 0, 0.2, 1)',
+                      backgroundColor: isActive ? 'rgba(255,255,255,0.08)' : 'transparent',
+                      color: isActive ? colors[s] : 'var(--text-muted)',
+                      boxShadow: isActive ? '0 4px 12px rgba(0,0,0,0.2)' : 'none',
+                      borderBottom: isActive ? `2px solid ${colors[s]}` : '2px solid transparent',
+                    }}
+                  >
+                    {labels[s]}
+                  </button>
+                );
+              })}
             </div>
           </div>
 
