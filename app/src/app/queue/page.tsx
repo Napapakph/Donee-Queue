@@ -221,6 +221,7 @@ function CardItem({
   isUser: boolean;
 }) {
   const { workTypes, scaleTypes, platforms, settings } = useAppStore();
+  const { toast } = useToast();
   const wt = workTypes.find((w) => w.id === card.workTypeId);
   const sc = scaleTypes.find((s) => s.id === card.scaleTypeId);
   const plat = platforms.find((p) => p.id === card.platformId);
