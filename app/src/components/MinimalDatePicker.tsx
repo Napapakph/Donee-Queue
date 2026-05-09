@@ -6,7 +6,6 @@ import { format, addMonths, subMonths, startOfMonth, endOfMonth, startOfWeek, en
 interface Props {
   value: string; // yyyy-MM-dd
   onChange: (val: string) => void;
-  label?: string;
 }
 
 export function MinimalDatePicker({ value, onChange }: Props) {
@@ -45,118 +44,119 @@ export function MinimalDatePicker({ value, onChange }: Props) {
         days.push(
           <div
             key={cloneDay.toString()}
-            className={`picker-day ${isSelected ? 'selected' : ''} ${!isCurrentMonth ? 'disabled' : ''}`}
+            style={{
+              aspectRatio: '1',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              fontSize: '0.9rem',
+              cursor: 'pointer',
+              borderRadius: '8px',
+              transition: 'all 0.2s',
+              backgroundColor: isSelected ? 'var(--accent)' : 'transparent',
+              color: isSelected ? '#fff' : isCurrentMonth ? 'var(--text-primary)' : 'rgba(255,255,255,0.15)',
+              fontWeight: isSelected ? '700' : '500',
+            }}
             onClick={() => {
               onChange(format(cloneDay, 'yyyy-MM-dd'));
               setIsOpen(false);
             }}
+            onMouseOver={(e) => !isSelected && isCurrentMonth && (e.currentTarget.style.backgroundColor = 'rgba(168, 85, 247, 0.15)')}
+            onMouseOut={(e) => !isSelected && (e.currentTarget.style.backgroundColor = 'transparent')}
           >
             {format(cloneDay, 'd')}
           </div>
         );
         day = addDays(day, 1);
       }
-      rows.push(<div className="picker-week" key={day.toString()}>{days}</div>);
+      rows.push(
+        <div key={day.toString()} style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', gap: '2px' }}>
+          {days}
+        </div>
+      );
       days = [];
     }
-    return <div className="picker-body">{rows}</div>;
+    return <div>{rows}</div>;
   };
 
   return (
-    <div className="picker-container" ref={containerRef}>
-      <div className="picker-input" onClick={() => setIsOpen(!isOpen)}>
-        <CalendarIcon size={14} className="picker-icon" />
-        <span>{value ? format(new Date(value), 'dd/MM/yyyy') : 'Select date'}</span>
+    <div style={{ position: 'relative', width: '100%' }} ref={containerRef}>
+      <div 
+        style={{
+          display: 'flex',
+          alignItems: 'center',
+          gap: '0.75rem',
+          padding: '0.75rem 1rem',
+          background: 'rgba(255, 255, 255, 0.03)',
+          border: '1px solid rgba(255, 255, 255, 0.1)',
+          borderRadius: '10px',
+          cursor: 'pointer',
+          fontSize: '0.95rem',
+          color: 'var(--text-primary)',
+          transition: 'all 0.2s',
+        }}
+        onClick={() => setIsOpen(!isOpen)}
+        onMouseOver={(e) => { e.currentTarget.style.borderColor = 'var(--accent)'; e.currentTarget.style.background = 'rgba(255, 255, 255, 0.05)'; }}
+        onMouseOut={(e) => { e.currentTarget.style.borderColor = 'rgba(255, 255, 255, 0.1)'; e.currentTarget.style.background = 'rgba(255, 255, 255, 0.03)'; }}
+      >
+        <CalendarIcon size={16} style={{ color: 'var(--accent)' }} />
+        <span>{value ? format(new Date(value), 'dd MMMM yyyy') : 'Select date'}</span>
       </div>
 
       {isOpen && (
-        <div className="picker-dropdown glass">
-          <div className="picker-header">
-            <button onClick={() => setCurrentMonth(subMonths(currentMonth, 1))} className="picker-nav">
-              <ChevronLeft size={16} />
+        <div className="glass" style={{
+          position: 'absolute',
+          top: 'calc(100% + 10px)',
+          left: 0,
+          zIndex: 9999,
+          width: '320px',
+          padding: '1.25rem',
+          borderRadius: '16px',
+          boxShadow: '0 20px 50px rgba(0,0,0,0.6)',
+          border: '1px solid rgba(255,255,255,0.1)',
+          background: 'rgba(20, 20, 25, 0.95)',
+          backdropFilter: 'blur(20px)',
+        }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.25rem' }}>
+            <button 
+              onClick={() => setCurrentMonth(subMonths(currentMonth, 1))} 
+              style={{ background: 'rgba(255,255,255,0.05)', border: 'none', color: '#fff', cursor: 'pointer', padding: '6px', borderRadius: '8px', display: 'flex' }}
+            >
+              <ChevronLeft size={20} />
             </button>
-            <div className="picker-month-year">
+            <div style={{ fontWeight: 800, fontSize: '1.1rem', color: '#fff' }}>
               {format(currentMonth, 'MMMM yyyy')}
             </div>
-            <button onClick={() => setCurrentMonth(addMonths(currentMonth, 1))} className="picker-nav">
-              <ChevronRight size={16} />
+            <button 
+              onClick={() => setCurrentMonth(addMonths(currentMonth, 1))} 
+              style={{ background: 'rgba(255,255,255,0.05)', border: 'none', color: '#fff', cursor: 'pointer', padding: '6px', borderRadius: '8px', display: 'flex' }}
+            >
+              <ChevronRight size={20} />
             </button>
           </div>
           
-          <div className="picker-weekdays">
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', gap: '2px', marginBottom: '0.5rem' }}>
             {['Su', 'Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa'].map(d => (
-              <div key={d} className="picker-weekday">{d}</div>
+              <div key={d} style={{ textAlign: 'center', fontSize: '0.75rem', fontWeight: 800, color: 'var(--text-muted)', paddingBottom: '0.5rem' }}>{d}</div>
             ))}
           </div>
           
           {renderDays()}
+          
+          <div style={{ marginTop: '1rem', paddingTop: '1rem', borderTop: '1px solid rgba(255,255,255,0.05)', display: 'flex', justifyContent: 'center' }}>
+            <button 
+              style={{ background: 'none', border: 'none', color: 'var(--accent)', fontSize: '0.85rem', fontWeight: 700, cursor: 'pointer' }}
+              onClick={() => {
+                const now = format(new Date(), 'yyyy-MM-dd');
+                onChange(now);
+                setIsOpen(false);
+              }}
+            >
+              Go to Today
+            </button>
+          </div>
         </div>
       )}
-
-      <style jsx>{`
-        .picker-container { position: relative; width: 100%; }
-        .picker-input {
-          display: flex;
-          align-items: center;
-          gap: 0.75rem;
-          padding: 0.6rem 0.75rem;
-          background: rgba(255, 255, 255, 0.03);
-          border: 1px solid rgba(255, 255, 255, 0.1);
-          border-radius: 8px;
-          cursor: pointer;
-          font-size: 0.875rem;
-          color: var(--text-primary);
-          transition: all 0.2s;
-        }
-        .picker-input:hover { border-color: var(--accent); background: rgba(255, 255, 255, 0.05); }
-        .picker-icon { color: var(--text-muted); }
-        
-        .picker-dropdown {
-          position: absolute;
-          top: calc(100% + 8px);
-          left: 0;
-          z-index: 100;
-          width: 280px;
-          padding: 1rem;
-          border-radius: 12px;
-          box-shadow: 0 10px 30px rgba(0,0,0,0.5);
-        }
-        
-        .picker-header {
-          display: flex;
-          justify-content: space-between;
-          align-items: center;
-          marginBottom: 1rem;
-        }
-        .picker-month-year { font-weight: 700; font-size: 0.9rem; }
-        .picker-nav {
-          background: none; border: none; color: var(--text-secondary);
-          cursor: pointer; padding: 4px; border-radius: 4px;
-          display: flex; align-items: center; justify-content: center;
-        }
-        .picker-nav:hover { background: rgba(255,255,255,0.1); color: #fff; }
-        
-        .picker-weekdays {
-          display: grid;
-          grid-template-columns: repeat(7, 1fr);
-          margin-bottom: 0.5rem;
-        }
-        .picker-weekday {
-          text-align: center; font-size: 0.7rem; font-weight: 800;
-          color: var(--text-muted); opacity: 0.6;
-        }
-        
-        .picker-week { display: grid; grid-template-columns: repeat(7, 1fr); }
-        .picker-day {
-          aspect-ratio: 1;
-          display: flex; align-items: center; justify-content: center;
-          font-size: 0.8rem; cursor: pointer; border-radius: 6px;
-          transition: all 0.2s;
-        }
-        .picker-day:hover:not(.disabled) { background: rgba(168, 85, 247, 0.2); color: var(--accent); }
-        .picker-day.selected { background: var(--accent); color: #fff; font-weight: 700; }
-        .picker-day.disabled { color: var(--text-muted); opacity: 0.2; cursor: default; }
-      `}</style>
     </div>
   );
 }
