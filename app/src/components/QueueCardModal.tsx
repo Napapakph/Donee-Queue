@@ -195,20 +195,65 @@ export function QueueCardModal({ card, onClose }: Props) {
           </div>
 
           {/* Row 3: Price + Qty */}
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.75rem' }}>
+          <div style={{ display: 'grid', gridTemplateColumns: '1.2fr 1fr', gap: '1rem', alignItems: 'flex-end' }}>
             <div className="form-group">
-              <label className="label">Price ({settings.currency}) — auto-calculated</label>
-              <input className="input" type="number" min="0" value={form.price}
-                onChange={(e) => set('price', +e.target.value)} />
+              <label className="label">Price (auto-calculated)</label>
+              <div style={{ position: 'relative', display: 'flex', alignItems: 'center' }}>
+                <span style={{ 
+                  position: 'absolute', 
+                  left: '1rem', 
+                  color: 'var(--accent)', 
+                  fontWeight: 800, 
+                  fontSize: '1rem',
+                  opacity: 0.8
+                }}>
+                  {settings.currency}
+                </span>
+                <input 
+                  className="input" 
+                  type="number" 
+                  min="0" 
+                  value={form.price}
+                  onChange={(e) => set('price', +e.target.value)} 
+                  style={{ paddingLeft: '2.4rem', fontWeight: 700, fontSize: '1.1rem', color: 'var(--accent)' }}
+                />
+              </div>
             </div>
             <div className="form-group">
               <label className="label">Quantity</label>
-              <div style={{ display: 'flex', gap: '0.4rem', alignItems: 'center' }}>
-                <button className="btn-icon" onClick={() => set('quantity', Math.max(1, form.quantity - 1))}>−</button>
-                <input className="input" type="number" min="1" value={form.quantity}
+              <div style={{ 
+                display: 'flex', 
+                gap: '0.2rem', 
+                alignItems: 'center', 
+                background: 'rgba(255,255,255,0.03)', 
+                padding: '0.25rem', 
+                borderRadius: '10px',
+                border: '1px solid rgba(255,255,255,0.05)'
+              }}>
+                <button 
+                  type="button"
+                  className="btn-icon" 
+                  onClick={() => set('quantity', Math.max(1, form.quantity - 1))}
+                  style={{ border: 'none', background: 'none' }}
+                >
+                  −
+                </button>
+                <input 
+                  className="input" 
+                  type="number" 
+                  min="1" 
+                  value={form.quantity}
                   onChange={(e) => set('quantity', Math.max(1, +e.target.value))}
-                  style={{ textAlign: 'center', width: 64 }} />
-                <button className="btn-icon" onClick={() => set('quantity', form.quantity + 1)}>+</button>
+                  style={{ textAlign: 'center', width: '100%', border: 'none', background: 'none', fontWeight: 700 }} 
+                />
+                <button 
+                  type="button"
+                  className="btn-icon" 
+                  onClick={() => set('quantity', form.quantity + 1)}
+                  style={{ border: 'none', background: 'none' }}
+                >
+                  +
+                </button>
               </div>
             </div>
           </div>
