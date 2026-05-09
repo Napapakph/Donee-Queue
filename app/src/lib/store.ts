@@ -141,6 +141,8 @@ interface AppState {
   notifications: Notification[];
   addNotification: (n: Omit<Notification, 'id' | 'createdAt'>) => void;
   markNotificationRead: (id: string) => void;
+  // Busy Days
+  toggleBusyDay: (date: string) => void;
 }
 
 export const useAppStore = create<AppState>()(
@@ -309,6 +311,15 @@ export const useAppStore = create<AppState>()(
           n.id === id ? { ...n, read: true } : n
         ),
       })),
+      toggleBusyDay: (date) => set((s) => {
+        const current = s.profile.busyDays || [];
+        const next = current.includes(date)
+          ? current.filter((d) => d !== date)
+          : [...current, date];
+        return {
+          profile: { ...s.profile, busyDays: next }
+        };
+      }),
     }),
     {
       name: 'donee-queue-storage',

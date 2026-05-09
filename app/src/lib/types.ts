@@ -128,6 +128,7 @@ export interface UserProfile {
   avatar?: string;
   bio: string;
   contactChannels: ContactChannel[];
+  busyDays?: string[]; // Array of ISO date strings (YYYY-MM-DD)
 }
 
 // ─── App Settings ─────────────────────────────────────────────────────────────

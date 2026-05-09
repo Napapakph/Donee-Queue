@@ -30,6 +30,7 @@ export async function fetchPublicData(slug: string) {
       avatar: profile.avatar,
       bio: profile.bio,
       contactChannels: profile.contact_channels || [],
+      busyDays: profile.busy_days || [],
     },
     tos: profile.tos || '',
     commissionStatus: profile.commission_status || 'open',

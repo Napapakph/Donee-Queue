@@ -1,42 +1,24 @@
 'use client';
-import { useState, useRef } from 'react';
-import {
-  Plus, Trash2, Edit2, X, Upload, Eye, EyeOff, DollarSign,
-  Calendar, Clock, ChevronDown, AlertTriangle, CheckCircle, Filter
+import React, { useState, useRef } from 'react';
+import { 
+  LayoutDashboard, Calendar, Plus, Eye, EyeOff, Edit2, Trash2, 
+  Upload, Clock, AlertTriangle, X, ArrowLeft, ArrowRight 
 } from 'lucide-react';
 import { useAppStore } from '@/lib/store';
+import { ProgressStage, QueueCard } from '@/lib/types';
+import { QueueCardModal } from '../../components/QueueCardModal';
+import { ImageLightbox } from '../../components/ImageLightbox';
 import { useToast } from '@/components/ToastProvider';
-import type { QueueCard, ProgressStage, PaymentStatus } from '@/lib/types';
-import { QueueCardModal } from '@/components/QueueCardModal';
-import { CalendarView } from '@/components/CalendarView';
-import { ImageLightbox } from '@/components/ImageLightbox';
 import { createClient } from '@/lib/supabase/client';
 import { uploadBase64Image } from '@/lib/upload';
 
-type Category = 'all' | 'waiting' | 'working' | 'completed';
 type ViewMode = 'cards' | 'calendar';
-
-const STAGES: ProgressStage[] = ['Waiting', 'Sketching', 'Line Art', 'Base Coloring', 'Adding Details', 'Complete'];
-
-function getDeadlineStatus(commissionDate: string, deadlineDate: string, threshold: number) {
-  const now = Date.now();
-  const start = new Date(commissionDate).getTime();
-  const end = new Date(deadlineDate).getTime();
-  if (now > end) return 'overdue';
-  const ratio = (now - start) / (end - start);
-  if (ratio >= threshold / 100) return 'warning';
-  return 'safe';
-}
-
-function DeadlineStrip({ status, complete }: { status: string; complete: boolean }) {
-  const cls = complete ? 'deadline-complete' : status === 'overdue' ? 'deadline-overdue' : status === 'warning' ? 'deadline-warning' : 'deadline-safe';
-  return <div className={`deadline-strip ${cls}`} />;
-}
+type Category = 'all' | 'waiting' | 'working' | 'completed';
 
 export default function QueuePage({ externalData }: { externalData?: any }) {
   const storeData = useAppStore();
   const data = externalData || storeData;
-  const { role, queueCards, updateCard, removeCard, updateCardProgress, workTypes, scaleTypes, platforms, settings } = data;
+  const { role, queueCards, updateCard, removeCard, updateCardProgress, workTypes, scaleTypes, platforms, settings, profile, toggleBusyDay } = data;
   const { toast } = useToast();
   const isUser = role === 'user' || role === 'admin';
   const supabase = createClient();
@@ -50,13 +32,29 @@ export default function QueuePage({ externalData }: { externalData?: any }) {
   const [filterPayment, setFilterPayment] = useState('');
   const [search, setSearch] = useState('');
   const [lightboxData, setLightboxData] = useState<{ images: string[], index: number } | null>(null);
+  const [selectedDay, setSelectedDay] = useState<Date | null>(null);
+
+  // Sync busy days to Supabase
+  const handleToggleBusy = async (dateStr: string) => {
+    if (!isUser) return;
+    toggleBusyDay(dateStr);
+    const { data: { user } } = await supabase.auth.getUser();
+    if (user) {
+      const currentBusy = profile.busyDays || [];
+      const nextBusy = currentBusy.includes(dateStr) 
+        ? currentBusy.filter((d: string) => d !== dateStr) 
+        : [...currentBusy, dateStr];
+      await supabase.from('profiles').update({ busy_days: nextBusy }).eq('id', user.id);
+      toast(nextBusy.includes(dateStr) ? 'Marked as Busy' : 'Marked as Available', 'info');
+    }
+  };
 
   // ── Filtering ──────────────────────────────────────────────────────────────
   const filteredCards = (queueCards || []).filter((c: any) => {
     const sMatch = category === 'all' || (category === 'waiting' && c.progress === 'Waiting') || (category === 'working' && ['Sketching', 'Line Art', 'Base Coloring', 'Adding Details'].includes(c.progress)) || (category === 'completed' && c.progress === 'Complete');
     const pMatch = !filterPlatform || c.platformId === filterPlatform;
     const payMatch = !filterPayment || c.paymentStatus === filterPayment;
-    const qMatch = !search || c.customerName.toLowerCase().includes(search.toLowerCase());
+    const qMatch = !search || (c.customerName || '').toLowerCase().includes(search.toLowerCase());
     return sMatch && pMatch && payMatch && qMatch;
   });
 
@@ -67,52 +65,34 @@ export default function QueuePage({ externalData }: { externalData?: any }) {
   // ── Income summary ─────────────────────────────────────────────────────────
   const totalIncome = filteredCards
     .filter((c: any) => c.paymentStatus === 'paid')
-    .reduce((sum: number, c: any) => sum + c.price * c.quantity, 0);
+    .reduce((sum: number, c: any) => sum + (c.price * c.quantity), 0);
   const incomeVisible = isUser ? showIncome : (settings.showIncomeSummaryToGuests && showIncome);
 
   const countFor = (cat: Category) => {
-    if (cat === 'all') return queueCards.length;
-    if (cat === 'waiting') return queueCards.filter((c: any) => c.progress === 'Waiting').length;
-    if (cat === 'working') return queueCards.filter((c: any) => ['Sketching', 'Line Art', 'Base Coloring', 'Adding Details'].includes(c.progress)).length;
-    if (cat === 'completed') return queueCards.filter((c: any) => c.progress === 'Complete').length;
+    if (cat === 'all') return (queueCards || []).length;
+    if (cat === 'waiting') return (queueCards || []).filter((c: any) => c.progress === 'Waiting').length;
+    if (cat === 'working') return (queueCards || []).filter((c: any) => ['Sketching', 'Line Art', 'Base Coloring', 'Adding Details'].includes(c.progress)).length;
+    if (cat === 'completed') return (queueCards || []).filter((c: any) => c.progress === 'Complete').length;
     return 0;
   };
 
   return (
-    <div style={{ maxWidth: 1300, margin: '0 auto', padding: '2rem 1.5rem' }}>
+    <div style={{ maxWidth: 1200, margin: '0 auto', padding: '2rem 1.5rem' }}>
       {/* Header */}
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '1rem', marginBottom: '1.5rem' }}>
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '1rem', marginBottom: '2rem' }}>
         <div>
-          <h1 className="section-title"><span className="gradient-text">Commission Queue</span></h1>
-          <p style={{ color: 'var(--text-secondary)', fontSize: '0.875rem', marginTop: '0.25rem' }}>
-            {queueCards.length} total commissions
-          </p>
+          <h1 className="section-title" style={{ marginBottom: '0.25rem' }}>
+            <span className="gradient-text">Queue Board</span>
+          </h1>
+          <p style={{ color: 'var(--text-secondary)', fontSize: '0.9rem' }}>Track and manage commission progress</p>
         </div>
-        <div style={{ display: 'flex', gap: '0.75rem', alignItems: 'center', flexWrap: 'wrap' }}>
-          {/* Income toggle */}
-          {(isUser || settings.showIncomeSummaryToGuests) && (
-            <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-              {incomeVisible && (
-                <div className="glass" style={{ padding: '0.5rem 1rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                  <DollarSign size={14} style={{ color: 'var(--success)' }} />
-                  <span style={{ fontWeight: 700, color: 'var(--success)' }}>
-                    {settings.currency}{totalIncome.toLocaleString()}
-                  </span>
-                  <span style={{ color: 'var(--text-muted)', fontSize: '0.75rem' }}>received</span>
-                </div>
-              )}
-              {isUser && (
-                <button className="btn-icon" onClick={() => setShowIncome(!showIncome)} title="Toggle income visibility">
-                  {showIncome ? <Eye size={15} /> : <EyeOff size={15} />}
-                </button>
-              )}
-            </div>
-          )}
-          {/* View toggle */}
-          <div style={{ display: 'flex', gap: '0.25rem', background: 'rgba(255,255,255,0.05)', borderRadius: 8, padding: '0.25rem', border: '1px solid var(--border)' }}>
-            <button className={`tab ${viewMode === 'cards' ? 'active' : ''}`} style={{ flex: 'none', padding: '0.35rem 0.75rem', fontSize: '0.8rem' }} onClick={() => setViewMode('cards')}>Cards</button>
-            <button className={`tab ${viewMode === 'calendar' ? 'active' : ''}`} style={{ flex: 'none', padding: '0.35rem 0.75rem', fontSize: '0.8rem' }} onClick={() => setViewMode('calendar')}>Calendar</button>
-          </div>
+        <div style={{ display: 'flex', gap: '0.5rem' }}>
+          <button className={`btn ${viewMode === 'cards' ? 'btn-primary' : 'btn-ghost'} btn-sm`} onClick={() => setViewMode('cards')}>
+            <LayoutDashboard size={14} /> Cards
+          </button>
+          <button className={`btn ${viewMode === 'calendar' ? 'btn-primary' : 'btn-ghost'} btn-sm`} onClick={() => setViewMode('calendar')}>
+            <Calendar size={14} /> Calendar
+          </button>
           {isUser && (
             <button className="btn btn-primary btn-sm" onClick={() => { setEditCard(null); setShowModal(true); }}>
               <Plus size={14} /> Add Commission
@@ -121,18 +101,33 @@ export default function QueuePage({ externalData }: { externalData?: any }) {
         </div>
       </div>
 
-      {/* Category Tabs */}
-      <div className="tab-bar" style={{ marginBottom: '1.25rem' }}>
-        {(['all', 'waiting', 'working', 'completed'] as Category[]).map((c) => (
-          <button key={c} className={`tab ${category === c ? 'active' : ''}`} onClick={() => setCategory(c)}>
-            {c.charAt(0).toUpperCase() + c.slice(1)}
-            <span style={{
-              marginLeft: '0.4rem', fontSize: '0.7rem',
-              background: category === c ? 'rgba(255,255,255,0.2)' : 'rgba(255,255,255,0.08)',
-              borderRadius: 99, padding: '0 0.4rem',
-            }}>{countFor(c)}</span>
-          </button>
-        ))}
+      {/* Stats Summary */}
+      {incomeVisible && (
+        <div style={{ display: 'flex', gap: '1rem', marginBottom: '2rem', flexWrap: 'wrap' }}>
+          <div className="glass" style={{ padding: '1rem', flex: 1, minWidth: 160, textAlign: 'center', borderBottom: '3px solid var(--accent)' }}>
+            <div style={{ fontSize: '1.4rem', fontWeight: 800, color: 'var(--accent)' }}>{settings.currency}{totalIncome.toLocaleString()}</div>
+            <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>Confirmed Income</div>
+          </div>
+          <div className="glass" style={{ padding: '1rem', flex: 1, minWidth: 160, textAlign: 'center', borderBottom: '3px solid var(--warning)' }}>
+            <div style={{ fontSize: '1.4rem', fontWeight: 800, color: 'var(--warning)' }}>{filteredCards.filter((c: any) => c.paymentStatus === 'deposit').length}</div>
+            <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>Deposits Paid</div>
+          </div>
+          <div className="glass" style={{ padding: '1rem', flex: 1, minWidth: 160, textAlign: 'center', borderBottom: '3px solid var(--danger)' }}>
+            <div style={{ fontSize: '1.4rem', fontWeight: 800, color: 'var(--danger)' }}>{filteredCards.filter((c: any) => c.paymentStatus === 'unpaid').length}</div>
+            <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>Awaiting Payment</div>
+          </div>
+        </div>
+      )}
+
+      {/* Tabs / Filters */}
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '1rem', marginBottom: '1.5rem' }}>
+        <div className="tab-bar" style={{ maxWidth: 500 }}>
+          {([['all', 'All'], ['waiting', 'Waiting'], ['working', 'Working'], ['completed', 'Completed']] as [Category, string][]).map(([cat, label]) => (
+            <button key={cat} className={`tab ${category === cat ? 'active' : ''}`} onClick={() => setCategory(cat)}>
+              {label} <span style={{ opacity: 0.5, fontSize: '0.7rem', marginLeft: '0.2rem' }}>({countFor(cat)})</span>
+            </button>
+          ))}
+        </div>
       </div>
 
       {/* Filters */}
@@ -152,26 +147,31 @@ export default function QueuePage({ externalData }: { externalData?: any }) {
           </select>
           <select className="select" style={{ width: 'auto', fontSize: '0.8rem', minWidth: 140 }}
             value={filterPayment} onChange={(e) => setFilterPayment(e.target.value)}>
-            <option value="">All Payments</option>
+            <option value="">All Payment</option>
             <option value="unpaid">Unpaid</option>
-            <option value="deposit">50% Deposit</option>
-            <option value="paid">Fully Paid</option>
+            <option value="deposit">Deposit</option>
+            <option value="paid">Paid</option>
           </select>
+          <button className="btn btn-ghost btn-sm" onClick={() => setShowIncome(!showIncome)}>
+            {showIncome ? <EyeOff size={14} /> : <Eye size={14} />} {showIncome ? 'Hide' : 'Show'} Income
+          </button>
         </div>
       )}
 
       {/* Content */}
       {viewMode === 'calendar' ? (
-        <CalendarView cards={sortedCards} />
+        <CalendarView 
+          cards={sortedCards} 
+          busyDays={profile.busyDays || []} 
+          onDayClick={(day) => setSelectedDay(day)}
+        />
       ) : (
         <>
           {sortedCards.length === 0 ? (
             <div style={{ textAlign: 'center', padding: '5rem 2rem', color: 'var(--text-muted)' }}>
               <Calendar size={48} style={{ marginBottom: '1rem', opacity: 0.3 }} />
               <h3 style={{ fontWeight: 700, color: 'var(--text-secondary)', marginBottom: '0.5rem' }}>No commissions here</h3>
-              <p style={{ fontSize: '0.875rem' }}>
-                {isUser ? 'Click "Add Commission" to get started.' : 'Nothing to display right now.'}
-              </p>
+              <p style={{ fontSize: '0.875rem' }}>Try changing the filters or add a new commission.</p>
             </div>
           ) : (
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill,minmax(300px,1fr))', gap: '1rem' }}>
@@ -179,18 +179,17 @@ export default function QueuePage({ externalData }: { externalData?: any }) {
                 <CardItem key={card.id} card={card}
                   onEdit={() => { setEditCard(card); setShowModal(true); }}
                   onDelete={async () => {
-                    const { error } = await supabase.from('queue_cards').delete().eq('id', card.id);
-                    if (error) return toast(`DB Error: ${error.message}`, 'error');
-                    removeCard(card.id); 
-                    toast('Commission removed', 'info'); 
+                    if (confirm('Delete this card?')) {
+                      await supabase.from('queue_cards').delete().eq('id', card.id);
+                      removeCard(card.id);
+                      toast('Deleted successfully', 'success');
+                    }
                   }}
-                  onStageChange={async (s) => {
-                    const { error } = await supabase.from('queue_cards').update({ progress: s }).eq('id', card.id);
-                    if (error) return toast(`DB Error: ${error.message}`, 'error');
-                    updateCardProgress(card.id, s);
+                  onStageChange={async (stage) => {
+                    await supabase.from('queue_cards').update({ progress: stage }).eq('id', card.id);
+                    updateCardProgress(card.id, stage);
                   }}
-                  onImageClick={(images, index) => setLightboxData({ images, index })}
-                  isUser={isUser}
+                  onImageClick={(imgs, idx) => setLightboxData({ images: imgs, index: idx })}
                 />
               ))}
             </div>
@@ -198,53 +197,203 @@ export default function QueuePage({ externalData }: { externalData?: any }) {
         </>
       )}
 
+      {/* Modals */}
       {showModal && (
         <QueueCardModal
           card={editCard}
-          onClose={() => { setShowModal(false); setEditCard(null); }}
+          onClose={() => setShowModal(false)}
         />
       )}
 
       {lightboxData && (
-        <ImageLightbox 
-          images={lightboxData.images} 
-          initialIndex={lightboxData.index} 
-          onClose={() => setLightboxData(null)} 
+        <ImageLightbox
+          images={lightboxData.images}
+          initialIndex={lightboxData.index}
+          onClose={() => setLightboxData(null)}
+        />
+      )}
+
+      {selectedDay && (
+        <DayDetailsPopup 
+          date={selectedDay}
+          cards={sortedCards}
+          isBusy={(profile.busyDays || []).includes(selectedDay.toISOString().split('T')[0])}
+          isUser={isUser}
+          onToggleBusy={() => handleToggleBusy(selectedDay.toISOString().split('T')[0])}
+          onClose={() => setSelectedDay(null)}
         />
       )}
     </div>
   );
 }
 
-// ── Individual Queue Card ─────────────────────────────────────────────────────
-function CardItem({
-  card, onEdit, onDelete, onStageChange, onImageClick, isUser,
-}: {
-  card: QueueCard;
-  onEdit: () => void;
-  onDelete: () => void | Promise<void>;
-  onStageChange: (s: ProgressStage) => void | Promise<void>;
-  onImageClick: (images: string[], index: number) => void;
-  isUser: boolean;
+// ── Components ──────────────────────────────────────────────────────────────
+
+function CalendarView({ cards, busyDays, onDayClick }: { cards: any[], busyDays: string[], onDayClick: (d: Date) => void }) {
+  const [currentMonth, setCurrentMonth] = useState(new Date());
+  
+  const start = new Date(currentMonth.getFullYear(), currentMonth.getMonth(), 1);
+  const end = new Date(currentMonth.getFullYear(), currentMonth.getMonth() + 1, 0);
+  
+  const days = [];
+  const startDay = start.getDay();
+  for (let i = 0; i < startDay; i++) days.push(null);
+  for (let i = 1; i <= end.getDate(); i++) {
+    days.push(new Date(currentMonth.getFullYear(), currentMonth.getMonth(), i));
+  }
+
+  const changeMonth = (offset: number) => {
+    setCurrentMonth(new Date(currentMonth.getFullYear(), currentMonth.getMonth() + offset, 1));
+  };
+
+  return (
+    <div className="glass" style={{ padding: '1.5rem', borderRadius: 20 }}>
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '1.5rem' }}>
+        <h2 style={{ fontWeight: 800, fontSize: '1.25rem' }}>
+          {currentMonth.toLocaleString('default', { month: 'long', year: 'numeric' })}
+        </h2>
+        <div style={{ display: 'flex', gap: '0.5rem' }}>
+          <button className="btn-icon" onClick={() => changeMonth(-1)}><ArrowLeft size={16} /></button>
+          <button className="btn-icon" onClick={() => changeMonth(1)}><ArrowRight size={16} /></button>
+        </div>
+      </div>
+
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', gap: '4px' }}>
+        {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map(d => (
+          <div key={d} style={{ textAlign: 'center', fontSize: '0.75rem', fontWeight: 700, color: 'var(--text-muted)', padding: '0.5rem 0' }}>{d}</div>
+        ))}
+        {days.map((day, i) => {
+          if (!day) return <div key={`empty-${i}`} />;
+          
+          const dateStr = day.toISOString().split('T')[0];
+          const isToday = new Date().toISOString().split('T')[0] === dateStr;
+          const isBusy = busyDays.includes(dateStr);
+          
+          // Cards for this day
+          const dayCards = cards.filter(c => {
+            const cDate = new Date(c.commissionDate).toISOString().split('T')[0];
+            const dDate = new Date(c.deadlineDate).toISOString().split('T')[0];
+            return dateStr >= cDate && dateStr <= dDate && c.progress !== 'Complete';
+          });
+
+          return (
+            <div 
+              key={dateStr}
+              onClick={() => onDayClick(day)}
+              className="glass"
+              style={{
+                aspectRatio: '1.4 / 1',
+                padding: '0.5rem',
+                position: 'relative',
+                cursor: 'pointer',
+                borderRadius: 12,
+                border: isToday ? '1px solid var(--accent)' : '1px solid rgba(255,255,255,0.05)',
+                background: isBusy ? 'rgba(239,68,68,0.1)' : isToday ? 'rgba(168,85,247,0.1)' : 'rgba(255,255,255,0.02)',
+                transition: 'all 0.2s ease',
+              }}
+              onMouseOver={e => e.currentTarget.style.transform = 'translateY(-2px)'}
+              onMouseOut={e => e.currentTarget.style.transform = 'none'}
+            >
+              <div style={{ fontSize: '0.8rem', fontWeight: isToday ? 800 : 500, color: isToday ? 'var(--accent)' : 'var(--text-primary)' }}>
+                {day.getDate()}
+              </div>
+              
+              <div style={{ marginTop: '4px', display: 'flex', flexDirection: 'column', gap: '2px' }}>
+                {dayCards.slice(0, 2).map((c) => (
+                  <div key={c.id} style={{ 
+                    height: '4px', 
+                    borderRadius: 2, 
+                    background: c.progress === 'Waiting' ? 'var(--warning)' : 'var(--accent)',
+                    width: '100%'
+                  }} />
+                ))}
+                {dayCards.length > 2 && <div style={{ fontSize: '0.6rem', color: 'var(--text-muted)' }}>+{dayCards.length - 2}</div>}
+                {isBusy && <div style={{ fontSize: '0.6rem', color: 'var(--danger)', fontWeight: 700 }}>BUSY</div>}
+              </div>
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
+function DayDetailsPopup({ date, cards, isBusy, isUser, onToggleBusy, onClose }: { 
+  date: Date, cards: any[], isBusy: boolean, isUser: boolean, onToggleBusy: () => void, onClose: () => void 
 }) {
-  const { workTypes, scaleTypes, platforms, settings } = useAppStore();
-  const { toast } = useToast();
+  const dateStr = date.toISOString().split('T')[0];
+  const dayCards = cards.filter(c => {
+    const cDate = new Date(c.commissionDate).toISOString().split('T')[0];
+    const dDate = new Date(c.deadlineDate).toISOString().split('T')[0];
+    return dateStr >= cDate && dateStr <= dDate && c.progress !== 'Complete';
+  });
+
+  return (
+    <div className="modal-overlay" onClick={onClose} style={{ zIndex: 2000 }}>
+      <div className="modal-content glass" onClick={e => e.stopPropagation()} style={{ maxWidth: 400, padding: '2rem' }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
+          <h2 style={{ fontSize: '1.25rem', fontWeight: 800 }}>{date.toLocaleDateString(undefined, { dateStyle: 'full' })}</h2>
+          <button className="btn-icon" onClick={onClose}><X size={18} /></button>
+        </div>
+
+        {isUser && (
+          <div style={{ marginBottom: '1.5rem' }}>
+            <button 
+              className={`btn ${isBusy ? 'btn-ghost' : 'btn-primary'}`} 
+              style={{ width: '100%', borderColor: isBusy ? 'var(--danger)' : '' }}
+              onClick={() => { onToggleBusy(); onClose(); }}
+            >
+              {isBusy ? 'Mark as Available' : 'Mark as Busy (No Work)'}
+            </button>
+          </div>
+        )}
+
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+          <h3 style={{ fontSize: '0.9rem', fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase' }}>Active Tasks</h3>
+          {dayCards.length === 0 && !isBusy && (
+            <p style={{ color: 'var(--text-muted)', fontSize: '0.9rem' }}>No active commissions for this day.</p>
+          )}
+          {isBusy && (
+            <div className="glass" style={{ padding: '1rem', borderLeft: '4px solid var(--danger)', background: 'rgba(239,68,68,0.1)' }}>
+              <p style={{ fontWeight: 700, color: 'var(--danger)' }}>Artist is Busy</p>
+              <p style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>Not accepting or working on commissions today.</p>
+            </div>
+          )}
+          {dayCards.map(c => (
+            <div key={c.id} className="glass" style={{ padding: '1rem', display: 'flex', alignItems: 'center', gap: '1rem' }}>
+              <div style={{ width: 8, height: 8, borderRadius: 99, background: ['Waiting'].includes(c.progress) ? 'var(--warning)' : 'var(--accent)' }} />
+              <div>
+                <div style={{ fontWeight: 700, fontSize: '0.95rem' }}>{c.customerName}</div>
+                <div style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>{c.progress}</div>
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function CardItem({ card, onEdit, onDelete, onStageChange, onImageClick }: {
+  card: any; onEdit: () => void; onDelete: () => void; onStageChange: (stage: ProgressStage) => void; onImageClick: (imgs: string[], idx: number) => void;
+}) {
+  const { workTypes, scaleTypes, platforms, settings, role } = useAppStore();
+  const fileRef = useRef<HTMLInputElement>(null);
+  const updateCard = useAppStore(s => s.updateCard);
+  const toast = useToast().toast;
+  
+  const isUser = role === 'user' || role === 'admin';
   const wt = workTypes.find((w: any) => w.id === card.workTypeId);
   const sc = scaleTypes.find((s: any) => s.id === card.scaleTypeId);
   const plat = platforms.find((p: any) => p.id === card.platformId);
   const deadlineStatus = getDeadlineStatus(card.commissionDate, card.deadlineDate, settings.warningThresholdPercent);
   const complete = card.progress === 'Complete';
 
-  const paymentColors: Record<PaymentStatus, string> = {
-    unpaid: 'badge-red', deposit: 'badge-orange', paid: 'badge-green',
-  };
-  const paymentLabels: Record<PaymentStatus, string> = {
-    unpaid: 'Unpaid', deposit: '50% Paid', paid: 'Fully Paid',
-  };
+  const STAGES: ProgressStage[] = ['Waiting', 'Sketching', 'Line Art', 'Base Coloring', 'Adding Details', 'Complete'];
+  const maxImages = 8;
 
-  const fileRef = useRef<HTMLInputElement>(null);
-  const { updateCard, isPro } = useAppStore();
-  const maxImages = isPro ? 3 : 1;
+  const paymentColors: Record<string, string> = { unpaid: 'badge-red', deposit: 'badge-yellow', paid: 'badge-green' };
+  const paymentLabels: Record<string, string> = { unpaid: 'Unpaid', deposit: 'Deposit', paid: 'Paid' };
 
   const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -367,4 +516,20 @@ function CardItem({
       </div>
     </div>
   );
+}
+
+function getDeadlineStatus(start: string, end: string, warningThreshold: number) {
+  const s = new Date(start).getTime();
+  const e = new Date(end).getTime();
+  const now = Date.now();
+  if (now > e) return 'overdue';
+  const total = e - s;
+  const elapsed = now - s;
+  if (elapsed / total * 100 > warningThreshold) return 'warning';
+  return 'safe';
+}
+
+function DeadlineStrip({ status, complete }: { status: string; complete: boolean }) {
+  const cls = complete ? 'deadline-complete' : status === 'overdue' ? 'deadline-overdue' : status === 'warning' ? 'deadline-warning' : 'deadline-safe';
+  return <div className={`deadline-strip ${cls}`} />;
 }
