@@ -4,7 +4,7 @@ import { Palette, LayoutDashboard, BarChart3, Settings, ArrowRight, Star, Zap, S
 import { useAppStore } from '@/lib/store';
 
 export default function HomePage() {
-  const { profile, queueCards, settings } = useAppStore();
+  const { role, profile, queueCards, settings } = useAppStore();
   const totalActive = queueCards.filter((c) => c.progress !== 'Complete').length;
   const totalIncome = queueCards
     .filter((c) => c.paymentStatus === 'paid')
