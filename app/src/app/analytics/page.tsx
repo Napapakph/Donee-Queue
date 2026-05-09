@@ -114,6 +114,45 @@ export default function AnalyticsPage() {
 
       {tab === 'overview' && (
         <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
+          {/* Top Rankings */}
+          <div style={{ marginBottom: '0.5rem' }}>
+            <h3 style={{ fontWeight: 700, marginBottom: '1rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+               🏆 Top Work Types This Month
+            </h3>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '1rem' }}>
+              {[...workTypeSales].sort((a, b) => b.count - a.count).slice(0, 3).map((wt, i) => {
+                const crowns = ['👑', '🥈', '🥉'];
+                const bgColors = [
+                  'linear-gradient(135deg, rgba(251,191,36,0.1) 0%, rgba(251,191,36,0.02) 100%)',
+                  'linear-gradient(135deg, rgba(226,232,240,0.1) 0%, rgba(226,232,240,0.02) 100%)',
+                  'linear-gradient(135deg, rgba(180,83,9,0.1) 0%, rgba(180,83,9,0.02) 100%)'
+                ];
+                const borders = [
+                   '1px solid rgba(251,191,36,0.3)',
+                   '1px solid rgba(226,232,240,0.3)',
+                   '1px solid rgba(180,83,9,0.3)'
+                ];
+                return (
+                  <div key={wt.name} className="glass" style={{ 
+                    padding: '1.5rem', 
+                    textAlign: 'center', 
+                    background: bgColors[i],
+                    border: borders[i],
+                    position: 'relative',
+                    overflow: 'hidden'
+                  }}>
+                    <div style={{ fontSize: '2rem', marginBottom: '0.5rem' }}>{crowns[i]}</div>
+                    <div style={{ fontSize: '0.8rem', fontWeight: 800, color: 'var(--text-muted)', textTransform: 'uppercase', marginBottom: '0.25rem' }}>
+                       {i === 0 ? 'Champion' : i === 1 ? 'Runner Up' : '3rd Place'}
+                    </div>
+                    <div style={{ fontSize: '1.1rem', fontWeight: 800, color: 'var(--text-primary)' }}>{wt.name}</div>
+                    <div style={{ fontSize: '0.9rem', color: 'var(--accent)', fontWeight: 700, marginTop: '0.5rem' }}>{wt.count} orders</div>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+
           {/* Summary cards */}
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(200px,1fr))', gap: '1rem' }}>
             {[

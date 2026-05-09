@@ -270,11 +270,9 @@ function CalendarView({ cards, busyDays, onDayClick }: { cards: any[], busyDays:
           const isToday = new Date().toISOString().split('T')[0] === dateStr;
           const isBusy = busyDays.includes(dateStr);
 
-          // Cards for this day
-          const dayCards = cards.filter(c => {
-            const cDate = new Date(c.commissionDate).toISOString().split('T')[0];
-            const dDate = new Date(c.deadlineDate).toISOString().split('T')[0];
-            return dateStr >= cDate && dateStr <= dDate && c.progress !== 'Complete';
+          // Orders placed on this day
+          const dayOrders = cards.filter(c => {
+            return new Date(c.commissionDate).toISOString().split('T')[0] === dateStr;
           });
 
           return (
@@ -295,20 +293,26 @@ function CalendarView({ cards, busyDays, onDayClick }: { cards: any[], busyDays:
               onMouseOver={e => e.currentTarget.style.transform = 'translateY(-2px)'}
               onMouseOut={e => e.currentTarget.style.transform = 'none'}
             >
-              <div style={{ fontSize: '0.8rem', fontWeight: isToday ? 800 : 500, color: isToday ? 'var(--accent)' : 'var(--text-primary)' }}>
-                {day.getDate()}
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <div style={{ fontSize: '0.8rem', fontWeight: isToday ? 800 : 500, color: isToday ? 'var(--accent)' : 'var(--text-primary)' }}>
+                  {day.getDate()}
+                </div>
+                {dayOrders.length > 0 && (
+                   <div style={{ fontSize: '0.65rem', fontWeight: 800, color: 'var(--accent)' }}>{dayOrders.length} orders</div>
+                )}
               </div>
 
-              <div style={{ marginTop: '4px', display: 'flex', flexDirection: 'column', gap: '2px' }}>
-                {dayCards.slice(0, 2).map((c) => (
+              <div style={{ marginTop: '8px', display: 'flex', gap: '3px', flexWrap: 'wrap' }}>
+                {dayOrders.map((c, idx) => (
                   <div key={c.id} style={{
-                    height: '4px',
-                    borderRadius: 2,
-                    background: c.progress === 'Waiting' ? 'var(--warning)' : 'var(--accent)',
-                    width: '100%'
-                  }} />
+                    width: '6px',
+                    height: '6px',
+                    borderRadius: '50%',
+                    background: 'var(--accent)',
+                    boxShadow: '0 0 8px var(--accent)',
+                    opacity: 0.8
+                  }} title={c.customerName} />
                 ))}
-                {dayCards.length > 2 && <div style={{ fontSize: '0.6rem', color: 'var(--text-muted)' }}>+{dayCards.length - 2}</div>}
                 {isBusy && <div style={{ fontSize: '0.6rem', color: 'var(--danger)', fontWeight: 700 }}>BUSY</div>}
               </div>
             </div>
