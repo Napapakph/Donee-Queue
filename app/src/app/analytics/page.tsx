@@ -53,8 +53,6 @@ export default function AnalyticsPage() {
   });
   const monthlyData = Object.entries(monthlyMap).map(([month, income]) => ({ month, income })).slice(-12);
 
-  const monthlyData = Object.entries(monthlyMap).map(([month, income]) => ({ month, income })).slice(-12);
-
   const totalIncome = incomeEntries.filter(e => !e.isFromQueue).reduce((s, e) => s + e.amount, 0)
     + queueCards.filter((c) => c.paymentStatus === 'paid').reduce((s, c) => s + c.price * c.quantity, 0);
   const totalExpenses = expenseEntries.reduce((s, e) => s + e.amount, 0);
