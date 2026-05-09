@@ -7,6 +7,7 @@ import { createClient } from '@/lib/supabase/client';
 import { ImageLightbox } from '@/components/ImageLightbox';
 import { ImageCropperModal } from '@/components/ImageCropperModal';
 import { parseExample, type WorkType, type ScaleType, type CommissionStatus } from '@/lib/types';
+import { uploadBase64Image } from '@/lib/upload';
 
 type Tab = 'gallery' | 'pricing' | 'tos';
 
@@ -105,9 +106,13 @@ export default function CommissionPage() {
       setCropModalData({
         src: ev.target?.result as string,
         onDone: async (res) => {
-          const url = res.full; // We use full because ImageCropperModal now compresses it
-          const { data: { user } } = await supabase.auth.getUser();
-          if (user) {
+          try {
+            const { data: { user } } = await supabase.auth.getUser();
+            if (!user) return toast('Not logged in', 'error');
+            
+            toast('Uploading image to cloud storage...', 'info');
+            const url = await uploadBase64Image(res.full, user.id, 'gallery');
+
             const { data, error } = await supabase.from('showcase_images').insert({
               user_id: user.id, url, caption: file.name, is_nsfw: false
             }).select('id').single();
@@ -115,8 +120,10 @@ export default function CommissionPage() {
               addShowcaseImage({ id: data.id, url, caption: file.name, isNSFW: false });
               toast('Image added to gallery', 'success');
             } else if (error) {
-              toast(`Upload failed: ${error.message}`, 'error');
+              toast(`DB Error: ${error.message}`, 'error');
             }
+          } catch (err: any) {
+            toast(`Upload failed: ${err.message}`, 'error');
           }
           setCropModalData(null);
         }
@@ -139,8 +146,21 @@ export default function CommissionPage() {
       setCropModalData({
         src: ev.target?.result as string,
         aspectRatio: 16 / 9,
-        onDone: (res) => {
-          setEditWt((prev) => prev ? { ...prev, examples: [...(prev.examples || []), JSON.stringify(res)] } : prev);
+        onDone: async (res) => {
+          try {
+            const { data: { user } } = await supabase.auth.getUser();
+            if (!user) return toast('Not logged in', 'error');
+            
+            toast('Uploading to cloud...', 'info');
+            const fullUrl = await uploadBase64Image(res.full, user.id, 'work-types');
+            const thumbUrl = await uploadBase64Image(res.thumb, user.id, 'work-types-thumb');
+            
+            const finalRes = { full: fullUrl, thumb: thumbUrl };
+            setEditWt((prev) => prev ? { ...prev, examples: [...(prev.examples || []), JSON.stringify(finalRes)] } : prev);
+            toast('Image processed', 'success');
+          } catch (err: any) {
+            toast(`Upload failed: ${err.message}`, 'error');
+          }
           setCropModalData(null);
         }
       });
@@ -162,8 +182,21 @@ export default function CommissionPage() {
       setCropModalData({
         src: ev.target?.result as string,
         aspectRatio: 1, // square crop for scale types
-        onDone: (res) => {
-          setEditSc((prev) => prev ? { ...prev, examples: [...(prev.examples || []), JSON.stringify(res)] } : prev);
+        onDone: async (res) => {
+          try {
+            const { data: { user } } = await supabase.auth.getUser();
+            if (!user) return toast('Not logged in', 'error');
+            
+            toast('Uploading to cloud...', 'info');
+            const fullUrl = await uploadBase64Image(res.full, user.id, 'scale-types');
+            const thumbUrl = await uploadBase64Image(res.thumb, user.id, 'scale-types-thumb');
+            
+            const finalRes = { full: fullUrl, thumb: thumbUrl };
+            setEditSc((prev) => prev ? { ...prev, examples: [...(prev.examples || []), JSON.stringify(finalRes)] } : prev);
+            toast('Image processed', 'success');
+          } catch (err: any) {
+            toast(`Upload failed: ${err.message}`, 'error');
+          }
           setCropModalData(null);
         }
       });
