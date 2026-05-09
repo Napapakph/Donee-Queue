@@ -30,9 +30,9 @@ export async function fetchPublicData(slug: string) {
       avatar: profile.avatar,
       bio: profile.bio,
       contactChannels: profile.contact_channels || [],
-      tos: profile.tos || '',
-      commissionStatus: profile.commission_status || 'open',
     },
+    tos: profile.tos || '',
+    commissionStatus: profile.commission_status || 'open',
     settings: {
       currency: '฿',
       ...profile.app_settings,
