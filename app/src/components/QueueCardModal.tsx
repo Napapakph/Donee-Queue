@@ -3,6 +3,7 @@ import { useState, useEffect } from 'react';
 import { Check, X, Plus } from 'lucide-react';
 import { useAppStore } from '@/lib/store';
 import { useToast } from '@/components/ToastProvider';
+import { createClient } from '@/lib/supabase/client';
 import type { QueueCard, ProgressStage, PaymentStatus } from '@/lib/types';
 import { addDays, format } from 'date-fns';
 
@@ -23,6 +24,7 @@ function calcPrice(basePrice: number, scaleModifier: number, scaleType: 'flat' |
 export function QueueCardModal({ card, onClose }: Props) {
   const { addCard, updateCard, workTypes, scaleTypes, platforms, addPlatform, settings } = useAppStore();
   const { toast } = useToast();
+  const supabase = createClient();
 
   const today = format(new Date(), 'yyyy-MM-dd');
 
@@ -48,6 +50,7 @@ export function QueueCardModal({ card, onClose }: Props) {
 
   const [newPlatform, setNewPlatform] = useState('');
   const [showAddPlatform, setShowAddPlatform] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   // Auto-calculate price & deadline when work type / scale changes
   useEffect(() => {
@@ -83,17 +86,52 @@ export function QueueCardModal({ card, onClose }: Props) {
     });
   }, [card]);
 
-  const handleSave = () => {
+  const handleSave = async () => {
     if (!form.customerName.trim()) return toast('Customer name required', 'error');
     if (!form.workTypeId) return toast('Work type required', 'error');
-    if (card) {
-      updateCard(card.id, form);
-      toast('Commission updated', 'success');
-    } else {
-      addCard(form);
-      toast('Commission added!', 'success');
+
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return toast('Not logged in', 'error');
+
+    setIsSubmitting(true);
+    try {
+      const dbData = {
+        customer_name: form.customerName,
+        platform_id: form.platformId,
+        work_type_id: form.workTypeId,
+        scale_type_id: form.scaleTypeId,
+        description: form.description,
+        price: form.price,
+        quantity: form.quantity,
+        is_commercial: form.isCommercial,
+        is_public: form.isPublic,
+        is_nsfw: form.isNSFW,
+        brief_received: form.briefReceived,
+        payment_status: form.paymentStatus,
+        commission_date: form.commissionDate,
+        deadline_date: form.deadlineDate,
+        progress: form.progress,
+        notes: form.notes,
+        images: form.images,
+      };
+
+      if (card) {
+        const { error } = await supabase.from('queue_cards').update(dbData).eq('id', card.id);
+        if (error) throw error;
+        updateCard(card.id, form);
+        toast('Commission updated', 'success');
+      } else {
+        const { data, error } = await supabase.from('queue_cards').insert({ ...dbData, user_id: user.id }).select('id').single();
+        if (error) throw error;
+        addCard({ ...form, id: data.id });
+        toast('Commission added!', 'success');
+      }
+      onClose();
+    } catch (err: any) {
+      toast(`DB Error: ${err.message}`, 'error');
+    } finally {
+      setIsSubmitting(false);
     }
-    onClose();
   };
 
   const set = (k: keyof typeof form, v: unknown) => setForm((f) => ({ ...f, [k]: v }));
@@ -238,9 +276,9 @@ export function QueueCardModal({ card, onClose }: Props) {
         </div>
 
         <div className="modal-footer">
-          <button className="btn btn-ghost" onClick={onClose}>Cancel</button>
-          <button className="btn btn-primary" onClick={handleSave}>
-            <Check size={15} /> {card ? 'Save Changes' : 'Add Commission'}
+          <button className="btn btn-ghost" onClick={onClose} disabled={isSubmitting}>Cancel</button>
+          <button className="btn btn-primary" onClick={handleSave} disabled={isSubmitting}>
+            {isSubmitting ? 'Saving...' : <><Check size={15} /> {card ? 'Save Changes' : 'Add Commission'}</>}
           </button>
         </div>
       </div>

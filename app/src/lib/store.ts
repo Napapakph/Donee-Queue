@@ -116,7 +116,7 @@ interface AppState {
 
   // Queue
   queueCards: QueueCard[];
-  addCard: (c: Omit<QueueCard, 'id' | 'createdAt' | 'updatedAt'>) => void;
+  addCard: (c: Omit<QueueCard, 'id' | 'createdAt' | 'updatedAt'> & { id?: string }) => void;
   updateCard: (id: string, c: Partial<QueueCard>) => void;
   removeCard: (id: string) => void;
   updateCardProgress: (id: string, stage: ProgressStage) => void;
@@ -221,7 +221,7 @@ export const useAppStore = create<AppState>()(
       addCard: (c) => {
         const now = new Date().toISOString();
         set((s) => ({
-          queueCards: [...s.queueCards, { ...c, id: uid(), createdAt: now, updatedAt: now }],
+          queueCards: [...s.queueCards, { id: uid(), createdAt: now, updatedAt: now, ...c }],
         }));
       },
       updateCard: (id, c) => {

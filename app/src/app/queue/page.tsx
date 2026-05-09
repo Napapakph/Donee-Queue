@@ -10,6 +10,8 @@ import type { QueueCard, ProgressStage, PaymentStatus } from '@/lib/types';
 import { QueueCardModal } from '@/components/QueueCardModal';
 import { CalendarView } from '@/components/CalendarView';
 import { ImageLightbox } from '@/components/ImageLightbox';
+import { createClient } from '@/lib/supabase/client';
+import { uploadBase64Image } from '@/lib/upload';
 
 type Category = 'all' | 'waiting' | 'working' | 'completed';
 type ViewMode = 'cards' | 'calendar';
@@ -32,12 +34,10 @@ function DeadlineStrip({ status, complete }: { status: string; complete: boolean
 }
 
 export default function QueuePage() {
-  const {
-    role, queueCards, updateCard, removeCard, updateCardProgress,
-    workTypes, scaleTypes, platforms, settings,
-  } = useAppStore();
+  const { role, queueCards, updateCard, removeCard, updateCardProgress, workTypes, scaleTypes, platforms, settings } = useAppStore();
   const { toast } = useToast();
   const isUser = role === 'user' || role === 'admin';
+  const supabase = createClient();
 
   const [category, setCategory] = useState<Category>('all');
   const [viewMode, setViewMode] = useState<ViewMode>('cards');
@@ -171,8 +171,17 @@ export default function QueuePage() {
               {filtered.map((card) => (
                 <CardItem key={card.id} card={card}
                   onEdit={() => { setEditCard(card); setShowModal(true); }}
-                  onDelete={() => { removeCard(card.id); toast('Commission removed', 'info'); }}
-                  onStageChange={(s) => updateCardProgress(card.id, s)}
+                  onDelete={async () => {
+                    const { error } = await supabase.from('queue_cards').delete().eq('id', card.id);
+                    if (error) return toast(`DB Error: ${error.message}`, 'error');
+                    removeCard(card.id); 
+                    toast('Commission removed', 'info'); 
+                  }}
+                  onStageChange={async (s) => {
+                    const { error } = await supabase.from('queue_cards').update({ progress: s }).eq('id', card.id);
+                    if (error) return toast(`DB Error: ${error.message}`, 'error');
+                    updateCardProgress(card.id, s);
+                  }}
                   onImageClick={(images, index) => setLightboxData({ images, index })}
                   isUser={isUser}
                 />
@@ -206,8 +215,8 @@ function CardItem({
 }: {
   card: QueueCard;
   onEdit: () => void;
-  onDelete: () => void;
-  onStageChange: (s: ProgressStage) => void;
+  onDelete: () => void | Promise<void>;
+  onStageChange: (s: ProgressStage) => void | Promise<void>;
   onImageClick: (images: string[], index: number) => void;
   isUser: boolean;
 }) {
@@ -233,9 +242,22 @@ function CardItem({
     const file = e.target.files?.[0];
     if (!file) return;
     if (card.images.length >= maxImages) return;
+    
+    const supabase = createClient();
     const reader = new FileReader();
-    reader.onload = (ev) => {
-      updateCard(card.id, { images: [...card.images, ev.target?.result as string] });
+    reader.onload = async (ev) => {
+      const base64 = ev.target?.result as string;
+      toast('Uploading image...', 'info');
+      try {
+        const url = await uploadBase64Image(base64, 'images', `queue/${card.id}_${Date.now()}.jpg`);
+        const newImages = [...card.images, url];
+        const { error } = await supabase.from('queue_cards').update({ images: newImages }).eq('id', card.id);
+        if (error) throw error;
+        updateCard(card.id, { images: newImages });
+        toast('Image uploaded', 'success');
+      } catch (err: any) {
+        toast(`Upload failed: ${err.message}`, 'error');
+      }
     };
     reader.readAsDataURL(file);
   };
