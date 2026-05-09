@@ -369,13 +369,15 @@ export default function CommissionPage() {
                   </div>
                   <div className="form-group">
                     <label className="label">Base Price ({settings.currency})</label>
-                    <input className="input" type="number" min="0" value={editWt.basePrice || 0}
-                      onChange={(e) => setEditWt({ ...editWt, basePrice: +e.target.value })} />
+                    <input className="input" type="number" min="0" value={editWt.basePrice || ''}
+                      onFocus={(e) => e.target.select()}
+                      onChange={(e) => setEditWt({ ...editWt, basePrice: e.target.value === '' ? 0 : +e.target.value })} />
                   </div>
                   <div className="form-group">
                     <label className="label">Estimated Days</label>
-                    <input className="input" type="number" min="1" value={editWt.estimatedDurationDays || 1}
-                      onChange={(e) => setEditWt({ ...editWt, estimatedDurationDays: +e.target.value })} />
+                    <input className="input" type="number" min="1" value={editWt.estimatedDurationDays || ''}
+                      onFocus={(e) => e.target.select()}
+                      onChange={(e) => setEditWt({ ...editWt, estimatedDurationDays: e.target.value === '' ? 0 : +e.target.value })} />
                   </div>
                   <div className="form-group" style={{ gridColumn: '1/-1' }}>
                     <label className="label">Description</label>
@@ -466,7 +468,9 @@ export default function CommissionPage() {
                   </div>
                   <div className="form-group">
                     <label className="label">Price Modifier</label>
-                    <input className="input" type="number" value={editSc.priceModifier || 0} onChange={(e) => setEditSc({ ...editSc, priceModifier: +e.target.value })} />
+                    <input className="input" type="number" value={editSc.priceModifier || ''}
+                      onFocus={(e) => e.target.select()}
+                      onChange={(e) => setEditSc({ ...editSc, priceModifier: e.target.value === '' ? 0 : +e.target.value })} />
                   </div>
                   <div className="form-group">
                     <label className="label">Modifier Type</label>
@@ -477,7 +481,9 @@ export default function CommissionPage() {
                   </div>
                   <div className="form-group">
                     <label className="label">+Days</label>
-                    <input className="input" type="number" value={editSc.durationModifierDays || 0} onChange={(e) => setEditSc({ ...editSc, durationModifierDays: +e.target.value })} />
+                    <input className="input" type="number" value={editSc.durationModifierDays || ''}
+                      onFocus={(e) => e.target.select()}
+                      onChange={(e) => setEditSc({ ...editSc, durationModifierDays: e.target.value === '' ? 0 : +e.target.value })} />
                   </div>
                   <div className="form-group" style={{ gridColumn: '1/-1' }}>
                     <label className="label">Example Images</label>

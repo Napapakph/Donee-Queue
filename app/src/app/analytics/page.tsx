@@ -200,7 +200,7 @@ function LedgerTab() {
         {showIncForm && (
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4,1fr)', gap: '0.6rem', marginBottom: '1rem', background: 'rgba(255,255,255,0.03)', padding: '0.75rem', borderRadius: 8 }}>
             <input className="input" type="date" value={incForm.date} onChange={(e) => setIncForm({ ...incForm, date: e.target.value })} />
-            <input className="input" type="number" placeholder="Amount" value={incForm.amount} onChange={(e) => setIncForm({ ...incForm, amount: +e.target.value })} />
+            <input className="input" type="number" placeholder="Amount" value={incForm.amount || ''} onFocus={(e) => e.target.select()} onChange={(e) => setIncForm({ ...incForm, amount: e.target.value === '' ? 0 : +e.target.value })} />
             <input className="input" placeholder="Source" value={incForm.source} onChange={(e) => setIncForm({ ...incForm, source: e.target.value })} />
             <div style={{ display: 'flex', gap: '0.4rem' }}>
               <button className="btn btn-primary btn-sm" style={{ flex: 1 }} onClick={async () => {
@@ -246,7 +246,7 @@ function LedgerTab() {
         {showExpForm && (
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5,1fr)', gap: '0.6rem', marginBottom: '1rem', background: 'rgba(255,255,255,0.03)', padding: '0.75rem', borderRadius: 8 }}>
             <input className="input" type="date" value={expForm.date} onChange={(e) => setExpForm({ ...expForm, date: e.target.value })} />
-            <input className="input" type="number" placeholder="Amount" value={expForm.amount} onChange={(e) => setExpForm({ ...expForm, amount: +e.target.value })} />
+            <input className="input" type="number" placeholder="Amount" value={expForm.amount || ''} onFocus={(e) => e.target.select()} onChange={(e) => setExpForm({ ...expForm, amount: e.target.value === '' ? 0 : +e.target.value })} />
             <input className="input" placeholder="Description" value={expForm.description} onChange={(e) => setExpForm({ ...expForm, description: e.target.value })} />
             
             <div style={{ display: 'flex', flexDirection: 'column', gap: '0.25rem' }}>
@@ -367,7 +367,7 @@ function TaxTab() {
               <option value="percentage">%</option>
               <option value="flat">Flat</option>
             </select>
-            <input className="input" type="number" placeholder="Value" value={form.value} onChange={(e) => setForm({ ...form, value: +e.target.value })} />
+            <input className="input" type="number" placeholder="Value" value={form.value || ''} onFocus={(e) => e.target.select()} onChange={(e) => setForm({ ...form, value: e.target.value === '' ? 0 : +e.target.value })} />
             <input className="input" placeholder="Category (optional)" value={form.appliesToCategory} onChange={(e) => setForm({ ...form, appliesToCategory: e.target.value })} />
             <div style={{ display: 'flex', gap: '0.4rem' }}>
               <button className="btn btn-primary btn-sm" onClick={async () => { 
