@@ -16,7 +16,7 @@ export default function CommissionPage() {
     role, workTypes, addWorkType, updateWorkType, removeWorkType,
     scaleTypes, addScaleType, updateScaleType, removeScaleType,
     commissionStatus, setCommissionStatus, tos, setTos,
-    showcaseImages, addShowcaseImage, removeShowcaseImage, settings,
+    showcaseImages, addShowcaseImage, updateShowcaseImage, removeShowcaseImage, settings,
   } = useAppStore();
   const { toast } = useToast();
   const [tab, setTab] = useState<Tab>('gallery');
@@ -24,6 +24,9 @@ export default function CommissionPage() {
   const supabase = createClient();
   const [lightboxData, setLightboxData] = useState<{ images: string[], index: number } | null>(null);
   const [cropModalData, setCropModalData] = useState<{ src: string, aspectRatio?: number, onDone: (res: { full: string, thumb: string }) => void } | null>(null);
+  const [editingImgId, setEditingImgId] = useState<string | null>(null);
+  const [editingImgCaption, setEditingImgCaption] = useState('');
+  const fileRef = useRef<HTMLInputElement>(null);
 
   // ── Work Type form ─────────────────────────────────────────────────────────
   const [editWt, setEditWt] = useState<Partial<WorkType> | null>(null);
@@ -290,9 +293,43 @@ export default function CommissionPage() {
                     {img.isNSFW && <span className="badge badge-red" style={{ position: 'absolute', top: 8, right: 8 }}>NSFW</span>}
                   </div>
                   <div style={{ padding: '0.75rem' }}>
-                    <p style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                      {img.caption}
-                    </p>
+                    {editingImgId === img.id ? (
+                      <div style={{ display: 'flex', gap: '0.4rem' }}>
+                        <input
+                          className="input input-sm"
+                          value={editingImgCaption}
+                          onChange={(e) => setEditingImgCaption(e.target.value)}
+                          autoFocus
+                          onKeyDown={async (e) => {
+                            if (e.key === 'Enter') {
+                              const { error } = await supabase.from('showcase_images').update({ caption: editingImgCaption }).eq('id', img.id);
+                              if (!error) {
+                                updateShowcaseImage(img.id, { caption: editingImgCaption });
+                                setEditingImgId(null);
+                              }
+                            }
+                          }}
+                        />
+                        <button className="btn btn-primary btn-sm" style={{ padding: '0 0.4rem' }} onClick={async () => {
+                          const { error } = await supabase.from('showcase_images').update({ caption: editingImgCaption }).eq('id', img.id);
+                          if (!error) {
+                            updateShowcaseImage(img.id, { caption: editingImgCaption });
+                            setEditingImgId(null);
+                          }
+                        }}><Check size={12} /></button>
+                      </div>
+                    ) : (
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '0.5rem' }}>
+                        <p style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', flex: 1 }}>
+                          {img.caption}
+                        </p>
+                        {isUser && (
+                          <button className="btn-icon" onClick={() => { setEditingImgId(img.id); setEditingImgCaption(img.caption); }}>
+                            <Edit2 size={12} />
+                          </button>
+                        )}
+                      </div>
+                    )}
                   </div>
                   {isUser && (
                     <button onClick={async () => {

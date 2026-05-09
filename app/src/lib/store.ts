@@ -106,6 +106,7 @@ interface AppState {
   setTos: (t: string) => void;
   showcaseImages: { id: string; url: string; caption: string; workTypeTag?: string; isNSFW: boolean }[];
   addShowcaseImage: (img: { url: string; caption: string; workTypeTag?: string; isNSFW: boolean; id?: string }) => void;
+  updateShowcaseImage: (id: string, img: Partial<{ caption: string; isNSFW: boolean; workTypeTag: string }>) => void;
   removeShowcaseImage: (id: string) => void;
 
   // Platforms
@@ -202,6 +203,9 @@ export const useAppStore = create<AppState>()(
       showcaseImages: [],
       addShowcaseImage: (img) => set((s) => ({
         showcaseImages: [...s.showcaseImages, { id: uid(), ...img }],
+      })),
+      updateShowcaseImage: (id, img) => set((s) => ({
+        showcaseImages: s.showcaseImages.map((i) => (i.id === id ? { ...i, ...img } : i)),
       })),
       removeShowcaseImage: (id) => set((s) => ({
         showcaseImages: s.showcaseImages.filter((i) => i.id !== id),
