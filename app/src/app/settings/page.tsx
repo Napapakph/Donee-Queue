@@ -11,7 +11,9 @@ const PRESET_THEMES = [
   { name: 'midnight-purple', label: 'Midnight Purple', accent: '#a855f7', secondary: '#6366f1', bg1: '#0d0d14', bg2: '#1a0a2e' },
   { name: 'rose-gold',       label: 'Rose Gold',       accent: '#f43f5e', secondary: '#fb923c', bg1: '#0f0a0b', bg2: '#1e0e10' },
   { name: 'ocean-blue',      label: 'Ocean Blue',      accent: '#3b82f6', secondary: '#06b6d4', bg1: '#050d1a', bg2: '#0a1628' },
-  { name: 'forest-green',    label: 'Forest Green',    accent: '#22d3a5', secondary: '#16a34a', bg1: '#050f0a', bg2: '#0a1e0f' },
+  { name: 'dreamy-crystal',  label: 'Dreamy Crystal',  accent: '#9f99d1', secondary: '#86bada', bg1: '#0d0d14', bg2: '#1a102b' },
+  { name: 'winter-frost',    label: 'Winter Frost',    accent: '#809bc4', secondary: '#b9b0d6', bg1: '#0d1117', bg2: '#161b22' },
+  { name: 'fresh-lime',      label: 'Fresh Lime',      accent: '#6bb5a6', secondary: '#9bc870', bg1: '#0a0f0d', bg2: '#101e18' },
   { name: 'golden-sunset',   label: 'Golden Sunset',   accent: '#f59e0b', secondary: '#ef4444', bg1: '#100a00', bg2: '#1e1000' },
 ];
 const PATTERNS = ['none', 'dots', 'grid', 'noise'] as const;

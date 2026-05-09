@@ -14,8 +14,8 @@
   --bg-secondary: #1a0a2e;
   --bg-card: rgba(255,255,255,0.04);
   --bg-card-hover: rgba(255,255,255,0.07);
-  --border: oklch(0.922 0 0);
-  --border-hover: rgba(168,85,247,0.4);
+  --border: rgba(255, 255, 255, 0.15);
+  --border-hover: rgba(255, 255, 255, 0.3);
   --text-primary: #f0eaff;
   --text-secondary: rgba(240,234,255,0.65);
   --text-muted: rgba(240,234,255,0.38);
