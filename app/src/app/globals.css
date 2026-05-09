@@ -12,10 +12,10 @@
   --secondary: oklch(0.97 0 0);
   --bg-primary: #0d0d14;
   --bg-secondary: #1a0a2e;
-  --bg-card: rgba(255,255,255,0.09);
-  --bg-card-hover: rgba(255,255,255,0.14);
-  --border: rgba(255, 255, 255, 0.28);
-  --border-hover: rgba(255, 255, 255, 0.45);
+  --bg-card: rgba(255,255,255,0.18);
+  --bg-card-hover: rgba(255,255,255,0.25);
+  --border: rgba(255, 255, 255, 0.45);
+  --border-hover: rgba(255, 255, 255, 0.65);
   --text-primary: #f0eaff;
   --text-secondary: rgba(240,234,255,0.65);
   --text-muted: rgba(240,234,255,0.38);
@@ -107,8 +107,8 @@ body {
 }
 
 .glass-strong {
-  background: rgba(255,255,255,0.12);
-  border: 1px solid rgba(255,255,255,0.25);
+  background: rgba(255,255,255,0.22);
+  border: 1px solid rgba(255,255,255,0.55);
   backdrop-filter: blur(24px);
   -webkit-backdrop-filter: blur(24px);
   border-radius: var(--radius);
