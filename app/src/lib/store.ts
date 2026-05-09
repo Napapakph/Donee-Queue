@@ -122,17 +122,17 @@ interface AppState {
 
   // Finance
   incomeEntries: IncomeEntry[];
-  addIncomeEntry: (e: Omit<IncomeEntry, 'id'>) => void;
+  addIncomeEntry: (e: Omit<IncomeEntry, 'id'> & { id?: string }) => void;
   updateIncomeEntry: (id: string, e: Partial<IncomeEntry>) => void;
   removeIncomeEntry: (id: string) => void;
 
   expenseEntries: ExpenseEntry[];
-  addExpenseEntry: (e: Omit<ExpenseEntry, 'id'>) => void;
+  addExpenseEntry: (e: Omit<ExpenseEntry, 'id'> & { id?: string }) => void;
   updateExpenseEntry: (id: string, e: Partial<ExpenseEntry>) => void;
   removeExpenseEntry: (id: string) => void;
 
   taxDeductionTypes: TaxDeductionType[];
-  addTaxType: (t: Omit<TaxDeductionType, 'id'>) => void;
+  addTaxType: (t: Omit<TaxDeductionType, 'id'> & { id?: string }) => void;
   updateTaxType: (id: string, t: Partial<TaxDeductionType>) => void;
   removeTaxType: (id: string) => void;
 
@@ -253,7 +253,7 @@ export const useAppStore = create<AppState>()(
       // ── Income ──
       incomeEntries: [],
       addIncomeEntry: (e) => set((s) => ({
-        incomeEntries: [...s.incomeEntries, { ...e, id: uid() }],
+        incomeEntries: [...s.incomeEntries, { id: uid(), ...e }],
       })),
       updateIncomeEntry: (id, e) => set((s) => ({
         incomeEntries: s.incomeEntries.map((entry) =>
@@ -267,7 +267,7 @@ export const useAppStore = create<AppState>()(
       // ── Expenses ──
       expenseEntries: [],
       addExpenseEntry: (e) => set((s) => ({
-        expenseEntries: [...s.expenseEntries, { ...e, id: uid() }],
+        expenseEntries: [...s.expenseEntries, { id: uid(), ...e }],
       })),
       updateExpenseEntry: (id, e) => set((s) => ({
         expenseEntries: s.expenseEntries.map((entry) =>
@@ -281,7 +281,7 @@ export const useAppStore = create<AppState>()(
       // ── Tax ──
       taxDeductionTypes: [],
       addTaxType: (t) => set((s) => ({
-        taxDeductionTypes: [...s.taxDeductionTypes, { ...t, id: uid() }],
+        taxDeductionTypes: [...s.taxDeductionTypes, { id: uid(), ...t }],
       })),
       updateTaxType: (id, t) => set((s) => ({
         taxDeductionTypes: s.taxDeductionTypes.map((tt) =>
