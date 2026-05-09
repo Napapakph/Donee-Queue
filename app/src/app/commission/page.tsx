@@ -11,13 +11,15 @@ import { uploadBase64Image } from '@/lib/upload';
 
 type Tab = 'gallery' | 'pricing' | 'tos';
 
-export default function CommissionPage() {
+export default function CommissionPage({ externalData }: { externalData?: any }) {
+  const storeData = useAppStore();
+  const data = externalData || storeData;
   const {
     role, workTypes, addWorkType, updateWorkType, removeWorkType,
     scaleTypes, addScaleType, updateScaleType, removeScaleType,
     commissionStatus, setCommissionStatus, tos, setTos,
     showcaseImages, addShowcaseImage, updateShowcaseImage, removeShowcaseImage, settings,
-  } = useAppStore();
+  } = data;
   const { toast } = useToast();
   const [tab, setTab] = useState<Tab>('gallery');
   const isUser = role === 'user' || role === 'admin';
@@ -229,12 +231,12 @@ export default function CommissionPage() {
         <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
           <div style={{
             padding: '0.5rem 1.2rem', borderRadius: 999,
-            background: `${statusColors[commissionStatus]}22`,
-            border: `1px solid ${statusColors[commissionStatus]}55`,
-            color: statusColors[commissionStatus],
+            background: `${statusColors[commissionStatus as CommissionStatus] || statusColors.open}22`,
+            border: `1px solid ${statusColors[commissionStatus as CommissionStatus] || statusColors.open}55`,
+            color: statusColors[commissionStatus as CommissionStatus] || statusColors.open,
             fontWeight: 700, fontSize: '0.875rem',
           }}>
-            {statusLabels[commissionStatus]}
+            {statusLabels[commissionStatus as CommissionStatus] || statusLabels.open}
           </div>
           {isUser && (
             <select className="select" style={{ width: 'auto', fontSize: '0.8rem' }}
@@ -280,14 +282,14 @@ export default function CommissionPage() {
             <EmptyState icon={<Image size={48} />} title="No Artwork Yet" desc="Upload some examples to showcase your style." />
           ) : (
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill,minmax(240px,1fr))', gap: '1rem' }}>
-              {showcaseImages.map((img) => (
+              {showcaseImages.map((img: any) => (
                 <div key={img.id} className="glass" style={{ overflow: 'hidden', position: 'relative' }}>
                   <div style={{ aspectRatio: '4/3', overflow: 'hidden', position: 'relative' }}>
                     <img
                       src={img.url} alt={img.caption}
                       className={img.isNSFW && role === 'guest' ? 'nsfw-blur' : ''}
                       style={{ width: '100%', height: '100%', objectFit: 'cover', cursor: 'pointer' }}
-                      onClick={() => setLightboxData({ images: showcaseImages.map(img => img.url), index: showcaseImages.findIndex(i => i.id === img.id) })}
+                      onClick={() => setLightboxData({ images: showcaseImages.map((i: any) => i.url), index: showcaseImages.findIndex((i: any) => i.id === img.id) })}
                     />
                     {img.isNSFW && <span className="badge badge-red" style={{ position: 'absolute', top: 8, right: 8 }}>NSFW</span>}
                   </div>
@@ -386,13 +388,13 @@ export default function CommissionPage() {
                   <div className="form-group" style={{ gridColumn: '1/-1' }}>
                     <label className="label">Example Images</label>
                     <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
-                      {editWt.examples?.map((ex, i) => {
+                      {editWt.examples?.map((ex: any, i: number) => {
                         const parsed = parseExample(ex);
                         return (
                         <div key={i} style={{ position: 'relative', width: 60, height: 60 }}>
                           <img src={parsed.thumb} style={{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: 6 }} />
                           <button className="btn-icon btn-danger" style={{ position: 'absolute', top: -4, right: -4, padding: 2, background: 'var(--bg-primary)' }}
-                            onClick={() => setEditWt({ ...editWt, examples: editWt.examples?.filter((_, idx) => idx !== i) })}><X size={10} /></button>
+                            onClick={() => setEditWt({ ...editWt, examples: editWt.examples?.filter((_: any, idx: number) => idx !== i) })}><X size={10} /></button>
                         </div>
                       )})}
                       <label style={{ width: 60, height: 60, border: '1px dashed var(--border)', borderRadius: 6, display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }}>
@@ -410,17 +412,17 @@ export default function CommissionPage() {
             )}
 
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill,minmax(260px,1fr))', gap: '0.75rem' }}>
-              {workTypes.filter((w) => w.visible || isUser).map((wt) => (
+              {workTypes.filter((w: any) => w.visible || isUser).map((wt: any) => (
                 <div key={wt.id} className="glass" style={{ padding: '1.25rem', position: 'relative' }}>
                   {!wt.visible && <span className="badge badge-gray" style={{ position: 'absolute', top: 10, right: 10 }}><EyeOff size={10} /> Hidden</span>}
                   <div className="gradient-text" style={{ fontWeight: 700, fontSize: '1.05rem', marginBottom: '0.25rem' }}>{wt.name}</div>
                   {wt.description && <p style={{ color: 'var(--text-secondary)', fontSize: '0.82rem', marginBottom: '0.75rem' }}>{wt.description}</p>}
                   {wt.examples && wt.examples.length > 0 && (
                     <div style={{ display: 'flex', gap: '0.5rem', marginBottom: '1rem', flexWrap: 'wrap' }}>
-                      {wt.examples.map((ex, i) => {
+                      {wt.examples.map((ex: any, i: number) => {
                         const parsed = parseExample(ex);
                         return (
-                        <div key={i} onClick={() => setLightboxData({ images: wt.examples?.map(e => parseExample(e).full) || [], index: i })} style={{ flex: '1 1 120px', height: 160, display: 'block', overflow: 'hidden', borderRadius: 8, border: '1px solid var(--border)', cursor: 'pointer' }}>
+                        <div key={i} onClick={() => setLightboxData({ images: wt.examples?.map((e: any) => parseExample(e).full) || [], index: i })} style={{ flex: '1 1 120px', height: 160, display: 'block', overflow: 'hidden', borderRadius: 8, border: '1px solid var(--border)', cursor: 'pointer' }}>
                           <img src={parsed.thumb} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover', transition: 'transform 0.2s' }} onMouseOver={e => e.currentTarget.style.transform = 'scale(1.05)'} onMouseOut={e => e.currentTarget.style.transform = 'scale(1)'} />
                         </div>
                       )})}
@@ -488,13 +490,13 @@ export default function CommissionPage() {
                   <div className="form-group" style={{ gridColumn: '1/-1' }}>
                     <label className="label">Example Images</label>
                     <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
-                      {editSc.examples?.map((ex, i) => {
+                      {editSc.examples?.map((ex: any, i: number) => {
                         const parsed = parseExample(ex);
                         return (
                         <div key={i} style={{ position: 'relative', width: 60, height: 60 }}>
                           <img src={parsed.thumb} style={{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: 6 }} />
                           <button className="btn-icon btn-danger" style={{ position: 'absolute', top: -4, right: -4, padding: 2, background: 'var(--bg-primary)' }}
-                            onClick={() => setEditSc({ ...editSc, examples: editSc.examples?.filter((_, idx) => idx !== i) })}><X size={10} /></button>
+                            onClick={() => setEditSc({ ...editSc, examples: editSc.examples?.filter((_: any, idx: number) => idx !== i) })}><X size={10} /></button>
                         </div>
                       )})}
                       <label style={{ width: 60, height: 60, border: '1px dashed var(--border)', borderRadius: 6, display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }}>
@@ -512,7 +514,7 @@ export default function CommissionPage() {
             )}
 
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill,minmax(200px,1fr))', gap: '0.75rem' }}>
-              {scaleTypes.map((sc) => (
+              {scaleTypes.map((sc: any) => (
                 <div key={sc.id} className="glass" style={{ padding: '1rem' }}>
                   <div style={{ fontWeight: 700, marginBottom: '0.25rem' }}>{sc.name}</div>
                   <div style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', marginBottom: '0.5rem' }}>
@@ -521,10 +523,10 @@ export default function CommissionPage() {
                   </div>
                   {sc.examples && sc.examples.length > 0 && (
                     <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap', marginTop: '0.75rem' }}>
-                      {sc.examples.map((ex, i) => {
+                      {sc.examples.map((ex: any, i: number) => {
                         const parsed = parseExample(ex);
                         return (
-                        <div key={i} onClick={() => setLightboxData({ images: sc.examples?.map(e => parseExample(e).full) || [], index: i })} style={{ flex: '1 1 80px', height: 100, display: 'block', overflow: 'hidden', borderRadius: 6, border: '1px solid var(--border)', cursor: 'pointer' }}>
+                        <div key={i} onClick={() => setLightboxData({ images: sc.examples?.map((e: any) => parseExample(e).full) || [], index: i })} style={{ flex: '1 1 80px', height: 100, display: 'block', overflow: 'hidden', borderRadius: 6, border: '1px solid var(--border)', cursor: 'pointer' }}>
                           <img src={parsed.thumb} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover', transition: 'transform 0.2s' }} onMouseOver={e => e.currentTarget.style.transform = 'scale(1.05)'} onMouseOut={e => e.currentTarget.style.transform = 'scale(1)'} />
                         </div>
                       )})}

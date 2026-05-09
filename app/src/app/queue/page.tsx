@@ -33,8 +33,10 @@ function DeadlineStrip({ status, complete }: { status: string; complete: boolean
   return <div className={`deadline-strip ${cls}`} />;
 }
 
-export default function QueuePage() {
-  const { role, queueCards, updateCard, removeCard, updateCardProgress, workTypes, scaleTypes, platforms, settings } = useAppStore();
+export default function QueuePage({ externalData }: { externalData?: any }) {
+  const storeData = useAppStore();
+  const data = externalData || storeData;
+  const { role, queueCards, updateCard, removeCard, updateCardProgress, workTypes, scaleTypes, platforms, settings } = data;
   const { toast } = useToast();
   const isUser = role === 'user' || role === 'admin';
   const supabase = createClient();
@@ -46,35 +48,33 @@ export default function QueuePage() {
   const [showIncome, setShowIncome] = useState(true);
   const [filterPlatform, setFilterPlatform] = useState('');
   const [filterPayment, setFilterPayment] = useState('');
+  const [search, setSearch] = useState('');
   const [lightboxData, setLightboxData] = useState<{ images: string[], index: number } | null>(null);
 
   // ── Filtering ──────────────────────────────────────────────────────────────
-  const filtered = queueCards
-    .filter((c) => {
-      if (category === 'waiting') return ['Waiting'].includes(c.progress);
-      if (category === 'working') return ['Sketching', 'Line Art', 'Base Coloring', 'Adding Details'].includes(c.progress);
-      if (category === 'completed') return c.progress === 'Complete';
-      return true;
-    })
-    .filter((c) => {
-      if (role === 'guest') return c.isPublic && !c.isNSFW;
-      return true;
-    })
-    .filter((c) => !filterPlatform || c.platformId === filterPlatform)
-    .filter((c) => !filterPayment || c.paymentStatus === filterPayment)
-    .sort((a, b) => new Date(a.commissionDate).getTime() - new Date(b.commissionDate).getTime());
+  const filteredCards = (queueCards || []).filter((c: any) => {
+    const sMatch = category === 'all' || (category === 'waiting' && c.progress === 'Waiting') || (category === 'working' && ['Sketching', 'Line Art', 'Base Coloring', 'Adding Details'].includes(c.progress)) || (category === 'completed' && c.progress === 'Complete');
+    const pMatch = !filterPlatform || c.platformId === filterPlatform;
+    const payMatch = !filterPayment || c.paymentStatus === filterPayment;
+    const qMatch = !search || c.customerName.toLowerCase().includes(search.toLowerCase());
+    return sMatch && pMatch && payMatch && qMatch;
+  });
+
+  const sortedCards = [...filteredCards].sort((a: any, b: any) => 
+    new Date(a.commissionDate).getTime() - new Date(b.commissionDate).getTime()
+  );
 
   // ── Income summary ─────────────────────────────────────────────────────────
-  const totalIncome = queueCards
-    .filter((c) => c.paymentStatus === 'paid')
-    .reduce((sum, c) => sum + c.price * c.quantity, 0);
-  const incomeVisible = isUser ? showIncome : settings.showIncomeSummaryToGuests && showIncome;
+  const totalIncome = filteredCards
+    .filter((c: any) => c.paymentStatus === 'paid')
+    .reduce((sum: number, c: any) => sum + c.price * c.quantity, 0);
+  const incomeVisible = isUser ? showIncome : (settings.showIncomeSummaryToGuests && showIncome);
 
   const countFor = (cat: Category) => {
     if (cat === 'all') return queueCards.length;
-    if (cat === 'waiting') return queueCards.filter((c) => c.progress === 'Waiting').length;
-    if (cat === 'working') return queueCards.filter((c) => ['Sketching', 'Line Art', 'Base Coloring', 'Adding Details'].includes(c.progress)).length;
-    if (cat === 'completed') return queueCards.filter((c) => c.progress === 'Complete').length;
+    if (cat === 'waiting') return queueCards.filter((c: any) => c.progress === 'Waiting').length;
+    if (cat === 'working') return queueCards.filter((c: any) => ['Sketching', 'Line Art', 'Base Coloring', 'Adding Details'].includes(c.progress)).length;
+    if (cat === 'completed') return queueCards.filter((c: any) => c.progress === 'Complete').length;
     return 0;
   };
 
@@ -137,11 +137,18 @@ export default function QueuePage() {
 
       {/* Filters */}
       {isUser && (
-        <div style={{ display: 'flex', gap: '0.75rem', marginBottom: '1.25rem', flexWrap: 'wrap' }}>
+        <div style={{ display: 'flex', gap: '0.75rem', flexWrap: 'wrap', alignItems: 'center', marginBottom: '1.25rem' }}>
+          <input 
+            className="input" 
+            placeholder="Search customer..." 
+            style={{ width: 'auto', fontSize: '0.8rem', minWidth: 200 }}
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+          />
           <select className="select" style={{ width: 'auto', fontSize: '0.8rem', minWidth: 140 }}
             value={filterPlatform} onChange={(e) => setFilterPlatform(e.target.value)}>
             <option value="">All Platforms</option>
-            {platforms.map((p) => <option key={p.id} value={p.id}>{p.name}</option>)}
+            {platforms.map((p: any) => <option key={p.id} value={p.id}>{p.name}</option>)}
           </select>
           <select className="select" style={{ width: 'auto', fontSize: '0.8rem', minWidth: 140 }}
             value={filterPayment} onChange={(e) => setFilterPayment(e.target.value)}>
@@ -155,10 +162,10 @@ export default function QueuePage() {
 
       {/* Content */}
       {viewMode === 'calendar' ? (
-        <CalendarView cards={filtered} />
+        <CalendarView cards={sortedCards} />
       ) : (
         <>
-          {filtered.length === 0 ? (
+          {sortedCards.length === 0 ? (
             <div style={{ textAlign: 'center', padding: '5rem 2rem', color: 'var(--text-muted)' }}>
               <Calendar size={48} style={{ marginBottom: '1rem', opacity: 0.3 }} />
               <h3 style={{ fontWeight: 700, color: 'var(--text-secondary)', marginBottom: '0.5rem' }}>No commissions here</h3>
@@ -168,7 +175,7 @@ export default function QueuePage() {
             </div>
           ) : (
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill,minmax(300px,1fr))', gap: '1rem' }}>
-              {filtered.map((card) => (
+              {sortedCards.map((card: any) => (
                 <CardItem key={card.id} card={card}
                   onEdit={() => { setEditCard(card); setShowModal(true); }}
                   onDelete={async () => {
@@ -222,9 +229,9 @@ function CardItem({
 }) {
   const { workTypes, scaleTypes, platforms, settings } = useAppStore();
   const { toast } = useToast();
-  const wt = workTypes.find((w) => w.id === card.workTypeId);
-  const sc = scaleTypes.find((s) => s.id === card.scaleTypeId);
-  const plat = platforms.find((p) => p.id === card.platformId);
+  const wt = workTypes.find((w: any) => w.id === card.workTypeId);
+  const sc = scaleTypes.find((s: any) => s.id === card.scaleTypeId);
+  const plat = platforms.find((p: any) => p.id === card.platformId);
   const deadlineStatus = getDeadlineStatus(card.commissionDate, card.deadlineDate, settings.warningThresholdPercent);
   const complete = card.progress === 'Complete';
 
@@ -326,9 +333,10 @@ function CardItem({
 
         {/* Images */}
         {card.images.length > 0 && (
-          <div style={{ display: 'flex', gap: '0.4rem', marginBottom: '0.6rem', flexWrap: 'wrap' }}>
-            {card.images.map((img, i) => (
-              <div key={i} onClick={() => onImageClick(card.images, i)} style={{ cursor: 'pointer', display: 'block', width: 52, height: 52, borderRadius: 6, overflow: 'hidden', border: '1px solid var(--border)' }}>
+          <div style={{ display: 'flex', gap: '0.4rem', flexWrap: 'wrap', marginBottom: '1rem' }}>
+            {card.images.map((img: string, i: number) => (
+              <div key={i} style={{ width: 60, height: 60, borderRadius: 8, overflow: 'hidden', cursor: 'pointer', border: '1px solid var(--border)' }}
+                onClick={() => onImageClick(card.images, i)}>
                 <img src={img} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
               </div>
             ))}
