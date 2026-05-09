@@ -7,6 +7,7 @@ import { createClient } from '@/lib/supabase/client';
 import type { QueueCard, ProgressStage, PaymentStatus } from '@/lib/types';
 import { addDays, format } from 'date-fns';
 import { MinimalDatePicker } from './MinimalDatePicker';
+import { MinimalTimePicker } from './MinimalTimePicker';
 
 interface Props {
   card: QueueCard | null;
@@ -337,12 +338,9 @@ export function QueueCardModal({ card, onClose }: Props) {
                   />
                 </div>
                 <div style={{ flex: 1 }}>
-                  <input 
-                    type="time" 
-                    className="input" 
-                    value={form.commissionTime}
-                    onChange={(e) => set('commissionTime', e.target.value)}
-                    style={{ height: '100%', padding: '0.6rem' }}
+                  <MinimalTimePicker 
+                    value={form.commissionTime || '00:00'}
+                    onChange={(val) => set('commissionTime', val)}
                   />
                 </div>
               </div>
