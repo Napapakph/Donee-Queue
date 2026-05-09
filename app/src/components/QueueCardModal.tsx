@@ -13,12 +13,15 @@ interface Props {
   onClose: () => void;
 }
 
-const STAGES: ProgressStage[] = ['Waiting', 'Sketching', 'Line Art', 'Base Coloring', 'Adding Details', 'Complete'];
+const STAGES: ProgressStage[] = ['Waiting', 'Sketching', 'Adding Details', 'Complete'];
 
-function calcPrice(basePrice: number, scaleModifier: number, scaleType: 'flat' | 'percentage', qty: number): number {
+function calcPrice(basePrice: number, scaleModifier: number, scaleType: 'flat' | 'percentage', qty: number, isCommercial: boolean): number {
   let price = basePrice;
   if (scaleType === 'percentage') price = price * (1 + scaleModifier / 100);
   else price = price + scaleModifier;
+
+  if (isCommercial) price = price * 2;
+
   return price * qty;
 }
 
@@ -60,9 +63,9 @@ export function QueueCardModal({ card, onClose }: Props) {
     if (!wt) return;
     const baseDays = wt.estimatedDurationDays + (sc?.durationModifierDays || 0);
     const deadline = format(addDays(new Date(form.commissionDate), baseDays), 'yyyy-MM-dd');
-    const price = calcPrice(wt.basePrice, sc?.priceModifier || 0, sc?.priceModifierType || 'flat', form.quantity);
-    setForm((f) => ({ ...f, deadlineDate: deadline, price }));
-  }, [form.workTypeId, form.scaleTypeId, form.commissionDate, form.quantity]);
+    const price = calcPrice(wt.basePrice, sc?.priceModifier || 0, sc?.priceModifierType || 'flat', form.quantity, form.isCommercial);
+    setForm((f) => ({ ...f, deadlineDate: deadline, price: price / form.quantity }));
+  }, [form.workTypeId, form.scaleTypeId, form.commissionDate, form.quantity, form.isCommercial]);
 
   // Populate form if editing
   useEffect(() => {
@@ -199,56 +202,56 @@ export function QueueCardModal({ card, onClose }: Props) {
             <div className="form-group">
               <label className="label">Price (auto-calculated)</label>
               <div style={{ position: 'relative', display: 'flex', alignItems: 'center' }}>
-                <span style={{ 
-                  position: 'absolute', 
-                  left: '1rem', 
-                  color: 'var(--accent)', 
-                  fontWeight: 800, 
+                <span style={{
+                  position: 'absolute',
+                  left: '1rem',
+                  color: 'var(--accent)',
+                  fontWeight: 800,
                   fontSize: '1rem',
                   opacity: 0.8
                 }}>
                   {settings.currency}
                 </span>
-                <input 
-                  className="input" 
-                  type="number" 
-                  min="0" 
+                <input
+                  className="input"
+                  type="number"
+                  min="0"
                   value={form.price}
-                  onChange={(e) => set('price', +e.target.value)} 
+                  onChange={(e) => set('price', +e.target.value)}
                   style={{ paddingLeft: '2.4rem', fontWeight: 700, fontSize: '1.1rem', color: 'var(--accent)' }}
                 />
               </div>
             </div>
             <div className="form-group">
               <label className="label">Quantity</label>
-              <div style={{ 
-                display: 'flex', 
-                gap: '0.2rem', 
-                alignItems: 'center', 
-                background: 'rgba(255,255,255,0.03)', 
-                padding: '0.25rem', 
+              <div style={{
+                display: 'flex',
+                gap: '0.2rem',
+                alignItems: 'center',
+                background: 'rgba(255,255,255,0.03)',
+                padding: '0.25rem',
                 borderRadius: '10px',
                 border: '1px solid rgba(255,255,255,0.05)'
               }}>
-                <button 
+                <button
                   type="button"
-                  className="btn-icon" 
+                  className="btn-icon"
                   onClick={() => set('quantity', Math.max(1, form.quantity - 1))}
                   style={{ border: 'none', background: 'none' }}
                 >
                   −
                 </button>
-                <input 
-                  className="input" 
-                  type="number" 
-                  min="1" 
+                <input
+                  className="input"
+                  type="number"
+                  min="1"
                   value={form.quantity}
                   onChange={(e) => set('quantity', Math.max(1, +e.target.value))}
-                  style={{ textAlign: 'center', width: '100%', border: 'none', background: 'none', fontWeight: 700 }} 
+                  style={{ textAlign: 'center', width: '100%', border: 'none', background: 'none', fontWeight: 700 }}
                 />
-                <button 
+                <button
                   type="button"
-                  className="btn-icon" 
+                  className="btn-icon"
                   onClick={() => set('quantity', form.quantity + 1)}
                   style={{ border: 'none', background: 'none' }}
                 >
@@ -280,11 +283,11 @@ export function QueueCardModal({ card, onClose }: Props) {
           {/* Payment Status */}
           <div className="form-group">
             <label className="label">Payment Status</label>
-            <div style={{ 
-              display: 'flex', 
-              gap: '0.4rem', 
-              background: 'rgba(255,255,255,0.03)', 
-              padding: '0.35rem', 
+            <div style={{
+              display: 'flex',
+              gap: '0.4rem',
+              background: 'rgba(255,255,255,0.03)',
+              padding: '0.35rem',
               borderRadius: '12px',
               border: '1px solid rgba(255,255,255,0.05)'
             }}>
@@ -292,7 +295,7 @@ export function QueueCardModal({ card, onClose }: Props) {
                 const isActive = form.paymentStatus === s;
                 const labels: Record<string, string> = { unpaid: 'Unpaid', deposit: '50% Deposit', paid: 'Fully Paid' };
                 const colors: Record<string, string> = { unpaid: 'var(--danger)', deposit: 'var(--warning)', paid: 'var(--success)' };
-                
+
                 return (
                   <button
                     key={s}
@@ -324,16 +327,16 @@ export function QueueCardModal({ card, onClose }: Props) {
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.75rem' }}>
             <div className="form-group">
               <label className="label">Commission Date</label>
-              <MinimalDatePicker 
-                value={form.commissionDate} 
-                onChange={(val) => set('commissionDate', val)} 
+              <MinimalDatePicker
+                value={form.commissionDate}
+                onChange={(val) => set('commissionDate', val)}
               />
             </div>
             <div className="form-group">
               <label className="label">Deadline Date — auto-suggested</label>
-              <MinimalDatePicker 
-                value={form.deadlineDate} 
-                onChange={(val) => set('deadlineDate', val)} 
+              <MinimalDatePicker
+                value={form.deadlineDate}
+                onChange={(val) => set('deadlineDate', val)}
               />
             </div>
           </div>

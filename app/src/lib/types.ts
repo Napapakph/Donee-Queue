@@ -26,8 +26,6 @@ export type CommissionStatus = 'open' | 'closed' | 'waitlist';
 export type ProgressStage =
   | 'Waiting'
   | 'Sketching'
-  | 'Line Art'
-  | 'Base Coloring'
   | 'Adding Details'
   | 'Complete';
 
@@ -118,7 +116,7 @@ export function parseExample(ex: string): { full: string, thumb: string } {
       const p = JSON.parse(ex);
       if (p.full && p.thumb) return p;
     }
-  } catch (e) {}
+  } catch (e) { }
   return { full: ex, thumb: ex };
 }
 

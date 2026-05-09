@@ -1,8 +1,8 @@
 'use client';
 import React, { useState, useRef } from 'react';
-import { 
-  LayoutDashboard, Calendar, Plus, Eye, EyeOff, Edit2, Trash2, 
-  Upload, Clock, AlertTriangle, X, ArrowLeft, ArrowRight 
+import {
+  LayoutDashboard, Calendar, Plus, Eye, EyeOff, Edit2, Trash2,
+  Upload, Clock, AlertTriangle, X, ArrowLeft, ArrowRight
 } from 'lucide-react';
 import { useAppStore } from '@/lib/store';
 import { ProgressStage, QueueCard } from '@/lib/types';
@@ -41,8 +41,8 @@ export default function QueuePage({ externalData }: { externalData?: any }) {
     const { data: { user } } = await supabase.auth.getUser();
     if (user) {
       const currentBusy = profile.busyDays || [];
-      const nextBusy = currentBusy.includes(dateStr) 
-        ? currentBusy.filter((d: string) => d !== dateStr) 
+      const nextBusy = currentBusy.includes(dateStr)
+        ? currentBusy.filter((d: string) => d !== dateStr)
         : [...currentBusy, dateStr];
       await supabase.from('profiles').update({ busy_days: nextBusy }).eq('id', user.id);
       toast(nextBusy.includes(dateStr) ? 'Marked as Busy' : 'Marked as Available', 'info');
@@ -51,14 +51,14 @@ export default function QueuePage({ externalData }: { externalData?: any }) {
 
   // ── Filtering ──────────────────────────────────────────────────────────────
   const filteredCards = (queueCards || []).filter((c: any) => {
-    const sMatch = category === 'all' || (category === 'waiting' && c.progress === 'Waiting') || (category === 'working' && ['Sketching', 'Line Art', 'Base Coloring', 'Adding Details'].includes(c.progress)) || (category === 'completed' && c.progress === 'Complete');
+    const sMatch = category === 'all' || (category === 'waiting' && c.progress === 'Waiting') || (category === 'working' && ['Sketching', 'Adding Details'].includes(c.progress)) || (category === 'completed' && c.progress === 'Complete');
     const pMatch = !filterPlatform || c.platformId === filterPlatform;
     const payMatch = !filterPayment || c.paymentStatus === filterPayment;
     const qMatch = !search || (c.customerName || '').toLowerCase().includes(search.toLowerCase());
     return sMatch && pMatch && payMatch && qMatch;
   });
 
-  const sortedCards = [...filteredCards].sort((a: any, b: any) => 
+  const sortedCards = [...filteredCards].sort((a: any, b: any) =>
     new Date(a.commissionDate).getTime() - new Date(b.commissionDate).getTime()
   );
 
@@ -71,7 +71,7 @@ export default function QueuePage({ externalData }: { externalData?: any }) {
   const countFor = (cat: Category) => {
     if (cat === 'all') return (queueCards || []).length;
     if (cat === 'waiting') return (queueCards || []).filter((c: any) => c.progress === 'Waiting').length;
-    if (cat === 'working') return (queueCards || []).filter((c: any) => ['Sketching', 'Line Art', 'Base Coloring', 'Adding Details'].includes(c.progress)).length;
+    if (cat === 'working') return (queueCards || []).filter((c: any) => ['Sketching', 'Adding Details'].includes(c.progress)).length;
     if (cat === 'completed') return (queueCards || []).filter((c: any) => c.progress === 'Complete').length;
     return 0;
   };
@@ -133,9 +133,9 @@ export default function QueuePage({ externalData }: { externalData?: any }) {
       {/* Filters */}
       {isUser && (
         <div style={{ display: 'flex', gap: '0.75rem', flexWrap: 'wrap', alignItems: 'center', marginBottom: '1.25rem' }}>
-          <input 
-            className="input" 
-            placeholder="Search customer..." 
+          <input
+            className="input"
+            placeholder="Search customer..."
             style={{ width: 'auto', fontSize: '0.8rem', minWidth: 200 }}
             value={search}
             onChange={(e) => setSearch(e.target.value)}
@@ -160,9 +160,9 @@ export default function QueuePage({ externalData }: { externalData?: any }) {
 
       {/* Content */}
       {viewMode === 'calendar' ? (
-        <CalendarView 
-          cards={sortedCards} 
-          busyDays={profile.busyDays || []} 
+        <CalendarView
+          cards={sortedCards}
+          busyDays={profile.busyDays || []}
           onDayClick={(day) => setSelectedDay(day)}
         />
       ) : (
@@ -214,7 +214,7 @@ export default function QueuePage({ externalData }: { externalData?: any }) {
       )}
 
       {selectedDay && (
-        <DayDetailsPopup 
+        <DayDetailsPopup
           date={selectedDay}
           cards={sortedCards}
           isBusy={(profile.busyDays || []).includes(selectedDay.toISOString().split('T')[0])}
@@ -232,10 +232,10 @@ export default function QueuePage({ externalData }: { externalData?: any }) {
 
 function CalendarView({ cards, busyDays, onDayClick }: { cards: any[], busyDays: string[], onDayClick: (d: Date) => void }) {
   const [currentMonth, setCurrentMonth] = useState(new Date());
-  
+
   const start = new Date(currentMonth.getFullYear(), currentMonth.getMonth(), 1);
   const end = new Date(currentMonth.getFullYear(), currentMonth.getMonth() + 1, 0);
-  
+
   const days = [];
   const startDay = start.getDay();
   for (let i = 0; i < startDay; i++) days.push(null);
@@ -265,11 +265,11 @@ function CalendarView({ cards, busyDays, onDayClick }: { cards: any[], busyDays:
         ))}
         {days.map((day, i) => {
           if (!day) return <div key={`empty-${i}`} />;
-          
+
           const dateStr = day.toISOString().split('T')[0];
           const isToday = new Date().toISOString().split('T')[0] === dateStr;
           const isBusy = busyDays.includes(dateStr);
-          
+
           // Cards for this day
           const dayCards = cards.filter(c => {
             const cDate = new Date(c.commissionDate).toISOString().split('T')[0];
@@ -278,7 +278,7 @@ function CalendarView({ cards, busyDays, onDayClick }: { cards: any[], busyDays:
           });
 
           return (
-            <div 
+            <div
               key={dateStr}
               onClick={() => onDayClick(day)}
               className="glass"
@@ -298,12 +298,12 @@ function CalendarView({ cards, busyDays, onDayClick }: { cards: any[], busyDays:
               <div style={{ fontSize: '0.8rem', fontWeight: isToday ? 800 : 500, color: isToday ? 'var(--accent)' : 'var(--text-primary)' }}>
                 {day.getDate()}
               </div>
-              
+
               <div style={{ marginTop: '4px', display: 'flex', flexDirection: 'column', gap: '2px' }}>
                 {dayCards.slice(0, 2).map((c) => (
-                  <div key={c.id} style={{ 
-                    height: '4px', 
-                    borderRadius: 2, 
+                  <div key={c.id} style={{
+                    height: '4px',
+                    borderRadius: 2,
                     background: c.progress === 'Waiting' ? 'var(--warning)' : 'var(--accent)',
                     width: '100%'
                   }} />
@@ -319,8 +319,8 @@ function CalendarView({ cards, busyDays, onDayClick }: { cards: any[], busyDays:
   );
 }
 
-function DayDetailsPopup({ date, cards, isBusy, isUser, onToggleBusy, onEditCard, onClose }: { 
-  date: Date, cards: any[], isBusy: boolean, isUser: boolean, onToggleBusy: () => void, onEditCard: (card: any) => void, onClose: () => void 
+function DayDetailsPopup({ date, cards, isBusy, isUser, onToggleBusy, onEditCard, onClose }: {
+  date: Date, cards: any[], isBusy: boolean, isUser: boolean, onToggleBusy: () => void, onEditCard: (card: any) => void, onClose: () => void
 }) {
   const dateStr = date.toISOString().split('T')[0];
   const dayCards = cards.filter(c => {
@@ -339,8 +339,8 @@ function DayDetailsPopup({ date, cards, isBusy, isUser, onToggleBusy, onEditCard
 
         {isUser && (
           <div style={{ marginBottom: '1.5rem' }}>
-            <button 
-              className={`btn ${isBusy ? 'btn-ghost' : 'btn-primary'}`} 
+            <button
+              className={`btn ${isBusy ? 'btn-ghost' : 'btn-primary'}`}
               style={{ width: '100%', borderColor: isBusy ? 'var(--danger)' : '' }}
               onClick={() => { onToggleBusy(); onClose(); }}
             >
@@ -389,7 +389,7 @@ function CardItem({ card, onEdit, onDelete, onStageChange, onImageClick }: {
   const fileRef = useRef<HTMLInputElement>(null);
   const updateCard = useAppStore(s => s.updateCard);
   const toast = useToast().toast;
-  
+
   const isUser = role === 'user' || role === 'admin';
   const wt = workTypes.find((w: any) => w.id === card.workTypeId);
   const sc = scaleTypes.find((s: any) => s.id === card.scaleTypeId);
@@ -397,7 +397,7 @@ function CardItem({ card, onEdit, onDelete, onStageChange, onImageClick }: {
   const deadlineStatus = getDeadlineStatus(card.commissionDate, card.deadlineDate, settings.warningThresholdPercent);
   const complete = card.progress === 'Complete';
 
-  const STAGES: ProgressStage[] = ['Waiting', 'Sketching', 'Line Art', 'Base Coloring', 'Adding Details', 'Complete'];
+  const STAGES: ProgressStage[] = ['Waiting', 'Sketching', 'Adding Details', 'Complete'];
   const maxImages = 8;
 
   const paymentColors: Record<string, string> = { unpaid: 'badge-red', deposit: 'badge-yellow', paid: 'badge-green' };
@@ -407,7 +407,7 @@ function CardItem({ card, onEdit, onDelete, onStageChange, onImageClick }: {
     const file = e.target.files?.[0];
     if (!file) return;
     if (card.images.length >= maxImages) return;
-    
+
     const supabase = createClient();
     const reader = new FileReader();
     reader.onload = async (ev) => {
