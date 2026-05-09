@@ -95,7 +95,6 @@ export default function CommissionPage() {
   };
 
   // ── Image upload ───────────────────────────────────────────────────────────
-  const fileRef = useRef<HTMLInputElement>(null);
   const handleImgUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
