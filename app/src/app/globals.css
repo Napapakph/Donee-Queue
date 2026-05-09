@@ -12,13 +12,13 @@
   --secondary: oklch(0.97 0 0);
   --bg-primary: #0d0d14;
   --bg-secondary: #1a0a2e;
-  --bg-card: rgba(255, 255, 255, 0.14);
+  --bg-card: rgba(255, 255, 255, 0.089);
   --bg-card-hover: rgba(255, 255, 255, 0.25);
-  --border: rgba(255, 255, 255, 0.45);
+  --border: rgba(255, 255, 255, 0.527);
   --border-hover: rgba(255, 255, 255, 0.65);
   --text-primary: #f0eaff;
-  --text-secondary: rgba(240, 234, 255, 0.65);
-  --text-muted: rgba(240, 234, 255, 0.38);
+  --text-secondary: rgba(240, 234, 255, 0.925);
+  --text-muted: rgb(240, 234, 255);
   --success: #22d3a5;
   --warning: #f59e0b;
   --danger: #ef4444;
