@@ -35,11 +35,12 @@ export default function CommissionPage() {
     if (!user) { toast('Not logged in', 'error'); return; }
 
     if (editWt.id) {
-      await supabase.from('work_types').update({
+      const { error } = await supabase.from('work_types').update({
         name: editWt.name, description: editWt.description,
         base_price: editWt.basePrice, estimated_duration_days: editWt.estimatedDurationDays,
         visible: editWt.visible, examples: editWt.examples
       }).eq('id', editWt.id);
+      if (error) { toast(`DB Error: ${error.message}`, 'error'); return; }
       updateWorkType(editWt.id, editWt);
       toast('Work type updated', 'success');
     } else {
@@ -67,11 +68,12 @@ export default function CommissionPage() {
     if (!user) return;
 
     if (editSc.id) {
-      await supabase.from('scale_types').update({
+      const { error } = await supabase.from('scale_types').update({
         name: editSc.name, price_modifier: editSc.priceModifier,
         price_modifier_type: editSc.priceModifierType, duration_modifier_days: editSc.durationModifierDays,
         examples: editSc.examples
       }).eq('id', editSc.id);
+      if (error) { toast(`DB Error: ${error.message}`, 'error'); return; }
       updateScaleType(editSc.id, editSc);
       toast('Scale type updated', 'success');
     } else {
@@ -113,7 +115,7 @@ export default function CommissionPage() {
               addShowcaseImage({ id: data.id, url, caption: file.name, isNSFW: false });
               toast('Image added to gallery', 'success');
             } else if (error) {
-              toast('Upload failed (Image too large?)', 'error');
+              toast(`Upload failed: ${error.message}`, 'error');
             }
           }
           setCropModalData(null);
@@ -206,7 +208,10 @@ export default function CommissionPage() {
                 const val = e.target.value as CommissionStatus;
                 setCommissionStatus(val);
                 const { data: { user } } = await supabase.auth.getUser();
-                if (user) await supabase.from('profiles').update({ commission_status: val }).eq('id', user.id);
+                if (user) {
+                  const { error } = await supabase.from('profiles').update({ commission_status: val }).eq('id', user.id);
+                  if (error) toast(`Status update failed: ${error.message}`, 'error');
+                }
               }}
             >
               <option value="open">Open</option>
@@ -487,8 +492,12 @@ export default function CommissionPage() {
               onClick={async () => {
                 const { data: { user } } = await supabase.auth.getUser();
                 if (user) {
-                  await supabase.from('profiles').update({ tos }).eq('id', user.id);
-                  toast('TOS saved to Database', 'success');
+                  const { error } = await supabase.from('profiles').update({ tos }).eq('id', user.id);
+                  if (error) {
+                    toast(`TOS save failed: ${error.message}`, 'error');
+                  } else {
+                    toast('TOS saved to Database', 'success');
+                  }
                 }
               }}>
               <Check size={14} /> Save TOS
