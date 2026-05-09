@@ -6,6 +6,7 @@ import { useToast } from '@/components/ToastProvider';
 import { createClient } from '@/lib/supabase/client';
 import type { QueueCard, ProgressStage, PaymentStatus } from '@/lib/types';
 import { addDays, format } from 'date-fns';
+import { MinimalDatePicker } from './MinimalDatePicker';
 
 interface Props {
   card: QueueCard | null;
@@ -250,13 +251,17 @@ export function QueueCardModal({ card, onClose }: Props) {
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.75rem' }}>
             <div className="form-group">
               <label className="label">Commission Date</label>
-              <input className="input" type="date" value={form.commissionDate}
-                onChange={(e) => set('commissionDate', e.target.value)} />
+              <MinimalDatePicker 
+                value={form.commissionDate} 
+                onChange={(val) => set('commissionDate', val)} 
+              />
             </div>
             <div className="form-group">
               <label className="label">Deadline Date — auto-suggested</label>
-              <input className="input" type="date" value={form.deadlineDate}
-                onChange={(e) => set('deadlineDate', e.target.value)} />
+              <MinimalDatePicker 
+                value={form.deadlineDate} 
+                onChange={(val) => set('deadlineDate', val)} 
+              />
             </div>
           </div>
 
