@@ -57,7 +57,35 @@ export function ImageCropperModal({ imageSrc, onCropDone, onCancel, aspectRatio 
     );
 
     const thumb = canvas.toDataURL('image/jpeg', 0.9);
-    onCropDone({ full: imageSrc, thumb });
+
+    // Compress full image
+    const maxDimension = 1600;
+    let fullWidth = image.naturalWidth;
+    let fullHeight = image.naturalHeight;
+    if (fullWidth > maxDimension || fullHeight > maxDimension) {
+      if (fullWidth > fullHeight) {
+        fullHeight = Math.round((fullHeight * maxDimension) / fullWidth);
+        fullWidth = maxDimension;
+      } else {
+        fullWidth = Math.round((fullWidth * maxDimension) / fullHeight);
+        fullHeight = maxDimension;
+      }
+    }
+    const fullCanvas = document.createElement('canvas');
+    fullCanvas.width = fullWidth;
+    fullCanvas.height = fullHeight;
+    const fullCtx = fullCanvas.getContext('2d');
+    
+    let compressedFull = imageSrc;
+    if (fullCtx) {
+      // Draw white background in case of transparent PNGs converting to JPEG
+      fullCtx.fillStyle = '#ffffff';
+      fullCtx.fillRect(0, 0, fullWidth, fullHeight);
+      fullCtx.drawImage(image, 0, 0, fullWidth, fullHeight);
+      compressedFull = fullCanvas.toDataURL('image/jpeg', 0.85);
+    }
+
+    onCropDone({ full: compressedFull, thumb });
   };
 
   if (typeof document === 'undefined') return null;

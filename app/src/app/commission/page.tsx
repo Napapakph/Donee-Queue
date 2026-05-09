@@ -94,20 +94,29 @@ export default function CommissionPage() {
     const file = e.target.files?.[0];
     if (!file) return;
     const reader = new FileReader();
-    reader.onload = async (ev) => {
-      const url = ev.target?.result as string;
-      const { data: { user } } = await supabase.auth.getUser();
-      if (user) {
-        const { data } = await supabase.from('showcase_images').insert({
-          user_id: user.id, url, caption: file.name, is_nsfw: false
-        }).select('id').single();
-        if (data) {
-          addShowcaseImage({ id: data.id, url, caption: file.name, isNSFW: false });
-          toast('Image added to gallery', 'success');
+    reader.onload = (ev) => {
+      setCropModalData({
+        src: ev.target?.result as string,
+        onDone: async (res) => {
+          const url = res.full; // We use full because ImageCropperModal now compresses it
+          const { data: { user } } = await supabase.auth.getUser();
+          if (user) {
+            const { data, error } = await supabase.from('showcase_images').insert({
+              user_id: user.id, url, caption: file.name, is_nsfw: false
+            }).select('id').single();
+            if (data) {
+              addShowcaseImage({ id: data.id, url, caption: file.name, isNSFW: false });
+              toast('Image added to gallery', 'success');
+            } else if (error) {
+              toast('Upload failed (Image too large?)', 'error');
+            }
+          }
+          setCropModalData(null);
         }
-      }
+      });
     };
     reader.readAsDataURL(file);
+    e.target.value = ''; // Reset
   };
 
   const handleWtExampleUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -125,6 +134,7 @@ export default function CommissionPage() {
       });
     };
     reader.readAsDataURL(file);
+    e.target.value = '';
   };
 
   const handleScExampleUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -142,6 +152,7 @@ export default function CommissionPage() {
       });
     };
     reader.readAsDataURL(file);
+    e.target.value = '';
   };
 
   const statusColors: Record<CommissionStatus, string> = {
