@@ -17,13 +17,14 @@ const PRESET_THEMES = [
 const PATTERNS = ['none', 'dots', 'grid', 'noise'] as const;
 
 export default function SettingsPage() {
-  const { role, settings, updateSettings } = useAppStore();
+  const { role, settings, updateSettings, profile, updateProfile } = useAppStore();
   const { toast } = useToast();
   const { user } = useAuth();
   const supabase = createClient();
 
   // Local draft copy — only applied when "Save & Apply" is clicked
   const [draft, setDraft] = useState<AppSettings>({ ...settings });
+  const [userSlug, setUserSlug] = useState(profile.slug || '');
   const [saving, setSaving] = useState(false);
 
   if (role === 'guest') return (
@@ -47,15 +48,24 @@ export default function SettingsPage() {
     setSaving(true);
     // Apply to store (ThemeApplier will pick it up and update the DOM)
     updateSettings(draft);
+    updateProfile({ slug: userSlug });
 
     // Save to Supabase if logged in
     if (user) {
       const { error } = await supabase
         .from('profiles')
-        .update({ app_settings: draft })
+        .update({ 
+          app_settings: draft,
+          slug: userSlug || null
+        })
         .eq('id', user.id);
-      if (error) toast('Saved locally (Supabase error)', 'warning');
-      else toast('Settings saved & applied!', 'success');
+      
+      if (error) {
+        if (error.code === '23505') toast('Slug already taken! Choose another.', 'error');
+        else toast('Saved locally (Supabase error)', 'warning');
+      } else {
+        toast('Settings saved & applied!', 'success');
+      }
     } else {
       toast('Settings applied! (Login to save to cloud)', 'info');
     }
@@ -79,6 +89,29 @@ export default function SettingsPage() {
           style={{ gap: '0.5rem' }}>
           <Save size={15} /> {saving ? 'Saving…' : 'Save & Apply'}
         </button>
+      </div>
+
+      {/* Public Profile Slug */}
+      <div className="glass" style={{ padding: '1.5rem', border: '1px solid var(--accent)' }}>
+        <h2 style={{ fontWeight: 700, marginBottom: '1rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+          Public Profile URL
+        </h2>
+        <div className="form-group">
+          <label className="label">Custom Slug (Link Name)</label>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+            <span style={{ color: 'var(--text-muted)', fontSize: '0.9rem' }}>donee-queue.vercel.app/</span>
+            <input 
+              className="input" 
+              placeholder="e.g. AliceZo" 
+              value={userSlug} 
+              onChange={(e) => setUserSlug(e.target.value.replace(/[^a-zA-Z0-9_-]/g, ''))}
+              style={{ flex: 1 }}
+            />
+          </div>
+          <p style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginTop: '0.5rem' }}>
+            Only letters, numbers, underscores and hyphens are allowed.
+          </p>
+        </div>
       </div>
 
       {/* Live Preview bar */}

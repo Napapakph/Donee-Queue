@@ -124,6 +124,7 @@ export function parseExample(ex: string): { full: string, thumb: string } {
 
 export interface UserProfile {
   displayName: string;
+  slug?: string;
   avatar?: string;
   bio: string;
   contactChannels: ContactChannel[];

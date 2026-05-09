@@ -3,12 +3,24 @@ import Link from 'next/link';
 import { Palette, LayoutDashboard, BarChart3, Settings, ArrowRight, Star, Zap, Shield } from 'lucide-react';
 import { useAppStore } from '@/lib/store';
 
-export default function HomePage() {
-  const { role, profile, queueCards, settings } = useAppStore();
-  const totalActive = queueCards.filter((c) => c.progress !== 'Complete').length;
-  const totalIncome = queueCards
-    .filter((c) => c.paymentStatus === 'paid')
-    .reduce((sum, c) => sum + c.price * c.quantity, 0);
+export default function HomePage({ externalData, slug: propSlug }: { externalData?: any, slug?: string }) {
+  const storeData = useAppStore();
+  
+  // Safety check: Next.js might pass page props to externalData if used as a main page.
+  // We only use externalData if it contains our expected profile data.
+  const isExternal = !!(externalData && externalData.profile);
+  const data = isExternal ? externalData : storeData;
+  const slug = isExternal ? propSlug : undefined;
+  
+  const { role, profile, queueCards = [], settings = {} } = data;
+  
+  const currency = settings.currency || '฿';
+  const totalActive = (queueCards || []).filter((c: any) => c.progress !== 'Complete').length;
+  const totalIncome = (queueCards || [])
+    .filter((c: any) => c.paymentStatus === 'paid')
+    .reduce((sum: number, c: any) => sum + (Number(c.price || 0) * (c.quantity || 1)), 0);
+
+  const getLink = (path: string) => slug ? `/${slug}${path}` : path;
 
   return (
     <div style={{ maxWidth: 1200, margin: '0 auto', padding: '3rem 1.5rem' }}>
@@ -42,9 +54,9 @@ export default function HomePage() {
         </p>
 
         {/* Contact Channels */}
-        {profile.contactChannels?.filter(c => c.visible).length > 0 && (
+        {profile.contactChannels?.filter((c: any) => c.visible).length > 0 && (
           <div style={{ display: 'flex', gap: '0.75rem', justifyContent: 'center', flexWrap: 'wrap', marginBottom: '2.5rem' }}>
-            {profile.contactChannels.filter(c => c.visible).map(ch => {
+            {profile.contactChannels.filter((c: any) => c.visible).map((ch: any) => {
               const icons: Record<string, string> = {
                 vgen: '🎨', gumroad: '🛍️', kofi: '☕', patreon: '🎭', facebook: '📘',
                 deviantart: '🌀', x: '✖️', instagram: '📸', bluesky: '🦋', pixiv: '🖼️',
@@ -71,7 +83,7 @@ export default function HomePage() {
                     e.currentTarget.style.background = 'rgba(255,255,255,0.03)';
                   }}
                 >
-                  <span style={{ fontSize: '1rem' }}>{icon}</span> {ch.label || ch.platform.charAt(0).toUpperCase() + ch.platform.slice(1)}
+                  <span style={{ fontSize: '1rem' }}>{icon}</span> {ch.label || (ch.platform ? ch.platform.charAt(0).toUpperCase() + ch.platform.slice(1) : 'Link')}
                 </a>
               );
             })}
@@ -79,10 +91,10 @@ export default function HomePage() {
         )}
 
         <div style={{ display: 'flex', gap: '0.75rem', justifyContent: 'center', flexWrap: 'wrap' }}>
-          <Link href="/commission" className="btn btn-primary" style={{ gap: '0.5rem' }}>
+          <Link href={getLink('/commission')} className="btn btn-primary" style={{ gap: '0.5rem' }}>
             <Palette size={16} /> View Commission Info
           </Link>
-          <Link href="/queue" className="btn btn-ghost">
+          <Link href={getLink('/queue')} className="btn btn-ghost">
             <LayoutDashboard size={16} /> Queue Board
           </Link>
         </div>
@@ -93,9 +105,9 @@ export default function HomePage() {
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(220px,1fr))', gap: '1rem', marginBottom: '3rem' }}>
           {[
             { label: 'Active Commissions', value: totalActive, icon: <LayoutDashboard size={20} />, color: 'var(--accent)' },
-            { label: 'Total Completed', value: queueCards.filter((c) => c.progress === 'Complete').length, icon: <Star size={20} />, color: 'var(--success)' },
-            { label: 'Total Income', value: `${settings.currency}${totalIncome.toLocaleString()}`, icon: <Zap size={20} />, color: '#fbbf24' },
-            { label: 'Clients Served', value: new Set(queueCards.map((c) => c.customerName)).size, icon: <Shield size={20} />, color: 'var(--secondary)' },
+            { label: 'Total Completed', value: queueCards.filter((c: any) => c.progress === 'Complete').length, icon: <Star size={20} />, color: 'var(--success)' },
+            { label: 'Total Income', value: `${currency}${totalIncome.toLocaleString()}`, icon: <Zap size={20} />, color: '#fbbf24' },
+            { label: 'Clients Served', value: new Set(queueCards.map((c: any) => c.customerName)).size, icon: <Shield size={20} />, color: 'var(--secondary)' },
           ].map((s) => (
             <div key={s.label} className="glass" style={{ padding: '1.5rem', textAlign: 'center' }}>
               <div style={{ color: s.color, marginBottom: '0.5rem' }}>{s.icon}</div>
@@ -110,12 +122,12 @@ export default function HomePage() {
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(260px,1fr))', gap: '1rem' }}>
         {[
           {
-            href: '/commission', icon: <Palette size={28} />, title: 'Commission Art',
+            href: getLink('/commission'), icon: <Palette size={28} />, title: 'Commission Art',
             desc: 'Browse my artwork examples, pricing, and commission types.',
             color: '#a855f7',
           },
           {
-            href: '/queue', icon: <LayoutDashboard size={28} />, title: 'Queue Board',
+            href: getLink('/queue'), icon: <LayoutDashboard size={28} />, title: 'Queue Board',
             desc: 'Track all active commissions with status, deadline, and progress.',
             color: '#6366f1',
           },

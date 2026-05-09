@@ -7,6 +7,7 @@
 create table if not exists profiles (
   id uuid references auth.users on delete cascade primary key,
   display_name text default 'My Art Studio',
+  slug text unique,
   avatar text,
   bio text default 'Welcome to my commission page!',
   contact_channels jsonb default '[]'::jsonb,
