@@ -20,7 +20,7 @@ create table if not exists profiles (
 
 -- ── Work Types ────────────────────────────────────────────────────────────────
 create table if not exists work_types (
-  id uuid primary key default gen_random_uuid(),
+  id text primary key,
   user_id uuid references auth.users on delete cascade not null,
   name text not null,
   description text,
@@ -33,7 +33,7 @@ create table if not exists work_types (
 
 -- ── Scale Types ───────────────────────────────────────────────────────────────
 create table if not exists scale_types (
-  id uuid primary key default gen_random_uuid(),
+  id text primary key,
   user_id uuid references auth.users on delete cascade not null,
   name text not null,
   price_modifier numeric default 0,
@@ -44,7 +44,7 @@ create table if not exists scale_types (
 
 -- ── Platforms ─────────────────────────────────────────────────────────────────
 create table if not exists platforms (
-  id uuid primary key default gen_random_uuid(),
+  id text primary key,
   user_id uuid references auth.users on delete cascade not null,
   name text not null
 );
@@ -65,9 +65,9 @@ create table if not exists queue_cards (
   id uuid primary key default gen_random_uuid(),
   user_id uuid references auth.users on delete cascade not null,
   customer_name text not null,
-  platform_id uuid,
-  work_type_id uuid,
-  scale_type_id uuid,
+  platform_id text,
+  work_type_id text,
+  scale_type_id text,
   description text,
   price numeric default 0,
   is_commercial boolean default false,
