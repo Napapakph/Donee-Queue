@@ -220,6 +220,7 @@ export default function QueuePage({ externalData }: { externalData?: any }) {
           isBusy={(profile.busyDays || []).includes(selectedDay.toISOString().split('T')[0])}
           isUser={isUser}
           onToggleBusy={() => handleToggleBusy(selectedDay.toISOString().split('T')[0])}
+          onEditCard={(card) => { setEditCard(card); setShowModal(true); setSelectedDay(null); }}
           onClose={() => setSelectedDay(null)}
         />
       )}
@@ -318,8 +319,8 @@ function CalendarView({ cards, busyDays, onDayClick }: { cards: any[], busyDays:
   );
 }
 
-function DayDetailsPopup({ date, cards, isBusy, isUser, onToggleBusy, onClose }: { 
-  date: Date, cards: any[], isBusy: boolean, isUser: boolean, onToggleBusy: () => void, onClose: () => void 
+function DayDetailsPopup({ date, cards, isBusy, isUser, onToggleBusy, onEditCard, onClose }: { 
+  date: Date, cards: any[], isBusy: boolean, isUser: boolean, onToggleBusy: () => void, onEditCard: (card: any) => void, onClose: () => void 
 }) {
   const dateStr = date.toISOString().split('T')[0];
   const dayCards = cards.filter(c => {
@@ -360,12 +361,19 @@ function DayDetailsPopup({ date, cards, isBusy, isUser, onToggleBusy, onClose }:
             </div>
           )}
           {dayCards.map(c => (
-            <div key={c.id} className="glass" style={{ padding: '1rem', display: 'flex', alignItems: 'center', gap: '1rem' }}>
-              <div style={{ width: 8, height: 8, borderRadius: 99, background: ['Waiting'].includes(c.progress) ? 'var(--warning)' : 'var(--accent)' }} />
-              <div>
-                <div style={{ fontWeight: 700, fontSize: '0.95rem' }}>{c.customerName}</div>
-                <div style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>{c.progress}</div>
+            <div key={c.id} className="glass" style={{ padding: '1rem', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '1rem' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+                <div style={{ width: 8, height: 8, borderRadius: 99, background: ['Waiting'].includes(c.progress) ? 'var(--warning)' : 'var(--accent)' }} />
+                <div>
+                  <div style={{ fontWeight: 700, fontSize: '0.95rem' }}>{c.customerName}</div>
+                  <div style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>{c.progress}</div>
+                </div>
               </div>
+              {isUser && (
+                <button className="btn-icon" onClick={() => onEditCard(c)}>
+                  <Edit2 size={14} />
+                </button>
+              )}
             </div>
           ))}
         </div>
