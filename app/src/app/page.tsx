@@ -89,20 +89,22 @@ export default function HomePage() {
       </div>
 
       {/* Stats */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(220px,1fr))', gap: '1rem', marginBottom: '3rem' }}>
-        {[
-          { label: 'Active Commissions', value: totalActive, icon: <LayoutDashboard size={20} />, color: 'var(--accent)' },
-          { label: 'Total Completed', value: queueCards.filter((c) => c.progress === 'Complete').length, icon: <Star size={20} />, color: 'var(--success)' },
-          { label: 'Total Income', value: `${settings.currency}${totalIncome.toLocaleString()}`, icon: <Zap size={20} />, color: '#fbbf24' },
-          { label: 'Clients Served', value: new Set(queueCards.map((c) => c.customerName)).size, icon: <Shield size={20} />, color: 'var(--secondary)' },
-        ].map((s) => (
-          <div key={s.label} className="glass" style={{ padding: '1.5rem', textAlign: 'center' }}>
-            <div style={{ color: s.color, marginBottom: '0.5rem' }}>{s.icon}</div>
-            <div style={{ fontSize: '1.8rem', fontWeight: 800, color: s.color }}>{s.value}</div>
-            <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)', marginTop: '0.25rem' }}>{s.label}</div>
-          </div>
-        ))}
-      </div>
+      {role !== 'guest' && (
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(220px,1fr))', gap: '1rem', marginBottom: '3rem' }}>
+          {[
+            { label: 'Active Commissions', value: totalActive, icon: <LayoutDashboard size={20} />, color: 'var(--accent)' },
+            { label: 'Total Completed', value: queueCards.filter((c) => c.progress === 'Complete').length, icon: <Star size={20} />, color: 'var(--success)' },
+            { label: 'Total Income', value: `${settings.currency}${totalIncome.toLocaleString()}`, icon: <Zap size={20} />, color: '#fbbf24' },
+            { label: 'Clients Served', value: new Set(queueCards.map((c) => c.customerName)).size, icon: <Shield size={20} />, color: 'var(--secondary)' },
+          ].map((s) => (
+            <div key={s.label} className="glass" style={{ padding: '1.5rem', textAlign: 'center' }}>
+              <div style={{ color: s.color, marginBottom: '0.5rem' }}>{s.icon}</div>
+              <div style={{ fontSize: '1.8rem', fontWeight: 800, color: s.color }}>{s.value}</div>
+              <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)', marginTop: '0.25rem' }}>{s.label}</div>
+            </div>
+          ))}
+        </div>
+      )}
 
       {/* Quick Nav */}
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(260px,1fr))', gap: '1rem' }}>
@@ -117,16 +119,18 @@ export default function HomePage() {
             desc: 'Track all active commissions with status, deadline, and progress.',
             color: '#6366f1',
           },
-          {
-            href: '/analytics', icon: <BarChart3 size={28} />, title: 'Analytics',
-            desc: 'Income insights, best-sellers, and financial tracking.',
-            color: '#22d3a5',
-          },
-          {
-            href: '/settings', icon: <Settings size={28} />, title: 'Settings',
-            desc: 'Customize colors, themes, effects, and preferences.',
-            color: '#f59e0b',
-          },
+          ...(role !== 'guest' ? [
+            {
+              href: '/analytics', icon: <BarChart3 size={28} />, title: 'Analytics',
+              desc: 'Income insights, best-sellers, and financial tracking.',
+              color: '#22d3a5',
+            },
+            {
+              href: '/settings', icon: <Settings size={28} />, title: 'Settings',
+              desc: 'Customize colors, themes, effects, and preferences.',
+              color: '#f59e0b',
+            }
+          ] : []),
         ].map((item) => (
           <Link key={item.href} href={item.href} style={{ textDecoration: 'none' }}>
             <div className="glass" style={{ padding: '1.75rem', height: '100%', cursor: 'pointer' }}>

@@ -4,6 +4,7 @@ import { BarChart, Bar, PieChart, Pie, Cell, LineChart, Line, XAxis, YAxis, Tool
 import { Plus, Trash2, Edit2, Check, X, Download } from 'lucide-react';
 import { useAppStore } from '@/lib/store';
 import { useToast } from '@/components/ToastProvider';
+import { createClient } from '@/lib/supabase/client';
 import type { IncomeEntry, ExpenseEntry, TaxDeductionType } from '@/lib/types';
 import { format, parseISO, startOfMonth } from 'date-fns';
 
@@ -52,7 +53,9 @@ export default function AnalyticsPage() {
   });
   const monthlyData = Object.entries(monthlyMap).map(([month, income]) => ({ month, income })).slice(-12);
 
-  const totalIncome = incomeEntries.reduce((s, e) => s + e.amount, 0)
+  const monthlyData = Object.entries(monthlyMap).map(([month, income]) => ({ month, income })).slice(-12);
+
+  const totalIncome = incomeEntries.filter(e => !e.isFromQueue).reduce((s, e) => s + e.amount, 0)
     + queueCards.filter((c) => c.paymentStatus === 'paid').reduce((s, c) => s + c.price * c.quantity, 0);
   const totalExpenses = expenseEntries.reduce((s, e) => s + e.amount, 0);
 
@@ -147,12 +150,13 @@ export default function AnalyticsPage() {
 
 // ── Ledger ────────────────────────────────────────────────────────────────────
 function LedgerTab() {
-  const { incomeEntries, addIncomeEntry, removeIncomeEntry, expenseEntries, addExpenseEntry, removeExpenseEntry, settings } = useAppStore();
+  const { incomeEntries, addIncomeEntry, removeIncomeEntry, expenseEntries, addExpenseEntry, removeExpenseEntry, updateExpenseEntry, settings } = useAppStore();
   const { toast } = useToast();
+  const supabase = createClient();
   const [showIncForm, setShowIncForm] = useState(false);
   const [showExpForm, setShowExpForm] = useState(false);
   const [incForm, setIncForm] = useState({ date: format(new Date(), 'yyyy-MM-dd'), amount: 0, source: '', category: 'Other' });
-  const [expForm, setExpForm] = useState({ date: format(new Date(), 'yyyy-MM-dd'), amount: 0, category: 'Software', description: '' });
+  const [expForm, setExpForm] = useState<{ id?: string, date: string, amount: number, category: string, description: string, customCategory?: string }>({ date: format(new Date(), 'yyyy-MM-dd'), amount: 0, category: 'Software', description: '' });
 
   const queueIncome = incomeEntries.filter((e) => e.isFromQueue);
   const manualIncome = incomeEntries.filter((e) => !e.isFromQueue);
@@ -201,8 +205,15 @@ function LedgerTab() {
             <input className="input" type="number" placeholder="Amount" value={incForm.amount} onChange={(e) => setIncForm({ ...incForm, amount: +e.target.value })} />
             <input className="input" placeholder="Source" value={incForm.source} onChange={(e) => setIncForm({ ...incForm, source: e.target.value })} />
             <div style={{ display: 'flex', gap: '0.4rem' }}>
-              <button className="btn btn-primary btn-sm" style={{ flex: 1 }} onClick={() => {
-                addIncomeEntry({ ...incForm, isFromQueue: false });
+              <button className="btn btn-primary btn-sm" style={{ flex: 1 }} onClick={async () => {
+                const { data: { user } } = await supabase.auth.getUser();
+                if (!user) return toast('Not logged in', 'error');
+                const { data, error } = await supabase.from('income_entries').insert({
+                  user_id: user.id, date: incForm.date, amount: incForm.amount, source: incForm.source, category: incForm.category, is_from_queue: false
+                }).select('id').single();
+                if (error) return toast(`DB Error: ${error.message}`, 'error');
+                
+                addIncomeEntry({ id: data.id, ...incForm, isFromQueue: false });
                 setShowIncForm(false);
                 toast('Income added', 'success');
               }}><Check size={13} /></button>
@@ -219,7 +230,10 @@ function LedgerTab() {
               <span className="badge badge-purple">{e.category}</span>
               {e.isFromQueue && <span className="badge badge-gray">Queue</span>}
               <span style={{ fontWeight: 700, color: 'var(--success)' }}>{settings.currency}{e.amount.toLocaleString()}</span>
-              {!e.isFromQueue && <button className="btn-icon" onClick={() => removeIncomeEntry(e.id)}><Trash2 size={12} /></button>}
+              {!e.isFromQueue && <button className="btn-icon" onClick={async () => {
+                await supabase.from('income_entries').delete().eq('id', e.id);
+                removeIncomeEntry(e.id);
+              }}><Trash2 size={12} /></button>}
             </div>
           ))}
         </div>
@@ -232,17 +246,49 @@ function LedgerTab() {
           <button className="btn btn-primary btn-sm" onClick={() => setShowExpForm(true)}><Plus size={14} /> Add</button>
         </div>
         {showExpForm && (
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4,1fr)', gap: '0.6rem', marginBottom: '1rem', background: 'rgba(255,255,255,0.03)', padding: '0.75rem', borderRadius: 8 }}>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5,1fr)', gap: '0.6rem', marginBottom: '1rem', background: 'rgba(255,255,255,0.03)', padding: '0.75rem', borderRadius: 8 }}>
             <input className="input" type="date" value={expForm.date} onChange={(e) => setExpForm({ ...expForm, date: e.target.value })} />
             <input className="input" type="number" placeholder="Amount" value={expForm.amount} onChange={(e) => setExpForm({ ...expForm, amount: +e.target.value })} />
             <input className="input" placeholder="Description" value={expForm.description} onChange={(e) => setExpForm({ ...expForm, description: e.target.value })} />
-            <div style={{ display: 'flex', gap: '0.4rem' }}>
-              <button className="btn btn-primary btn-sm" style={{ flex: 1 }} onClick={() => {
-                addExpenseEntry(expForm);
+            
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.25rem' }}>
+              <select className="select" value={expForm.category} onChange={(e) => setExpForm({ ...expForm, category: e.target.value })}>
+                <option value="Software">Software</option>
+                <option value="Hardware">Hardware</option>
+                <option value="Fees">Platform Fees</option>
+                <option value="Other">Other (Custom)</option>
+              </select>
+              {expForm.category === 'Other' && (
+                <input className="input" placeholder="Custom category..." value={expForm.customCategory || ''} onChange={(e) => setExpForm({ ...expForm, customCategory: e.target.value })} style={{ marginTop: '0.25rem' }} />
+              )}
+            </div>
+
+            <div style={{ display: 'flex', gap: '0.4rem', alignItems: 'flex-start' }}>
+              <button className="btn btn-primary btn-sm" style={{ flex: 1 }} onClick={async () => {
+                const { data: { user } } = await supabase.auth.getUser();
+                if (!user) return toast('Not logged in', 'error');
+                
+                const finalCategory = expForm.category === 'Other' && expForm.customCategory ? expForm.customCategory : expForm.category;
+                
+                if (expForm.id) {
+                  const { error } = await supabase.from('expense_entries').update({
+                    date: expForm.date, amount: expForm.amount, category: finalCategory, description: expForm.description
+                  }).eq('id', expForm.id);
+                  if (error) return toast(`DB Error: ${error.message}`, 'error');
+                  updateExpenseEntry(expForm.id, { date: expForm.date, amount: expForm.amount, category: finalCategory, description: expForm.description });
+                  toast('Expense updated', 'success');
+                } else {
+                  const { data, error } = await supabase.from('expense_entries').insert({
+                    user_id: user.id, date: expForm.date, amount: expForm.amount, category: finalCategory, description: expForm.description
+                  }).select('id').single();
+                  if (error) return toast(`DB Error: ${error.message}`, 'error');
+                  addExpenseEntry({ id: data.id, date: expForm.date, amount: expForm.amount, category: finalCategory, description: expForm.description });
+                  toast('Expense added', 'success');
+                }
                 setShowExpForm(false);
-                toast('Expense added', 'success');
+                setExpForm({ date: format(new Date(), 'yyyy-MM-dd'), amount: 0, category: 'Software', description: '' });
               }}><Check size={13} /></button>
-              <button className="btn btn-ghost btn-sm" onClick={() => setShowExpForm(false)}><X size={13} /></button>
+              <button className="btn btn-ghost btn-sm" onClick={() => { setShowExpForm(false); setExpForm({ date: format(new Date(), 'yyyy-MM-dd'), amount: 0, category: 'Software', description: '' }); }}><X size={13} /></button>
             </div>
           </div>
         )}
@@ -251,10 +297,21 @@ function LedgerTab() {
           {expenseEntries.map((e) => (
             <div key={e.id} style={{ display: 'flex', alignItems: 'center', gap: '1rem', padding: '0.6rem 0.75rem', borderRadius: 8, background: 'rgba(255,255,255,0.03)', fontSize: '0.85rem' }}>
               <span style={{ color: 'var(--text-muted)', minWidth: 80 }}>{e.date}</span>
-              <span style={{ flex: 1 }}>{e.description}</span>
+              <span style={{ flex: 1, fontStyle: e.description ? 'normal' : 'italic', color: e.description ? 'var(--text-primary)' : 'var(--text-muted)' }}>
+                {e.description || '-'}
+              </span>
               <span className="badge badge-orange">{e.category}</span>
               <span style={{ fontWeight: 700, color: 'var(--danger)' }}>{settings.currency}{e.amount.toLocaleString()}</span>
-              <button className="btn-icon" onClick={() => removeExpenseEntry(e.id)}><Trash2 size={12} /></button>
+              <div style={{ display: 'flex', gap: '0.25rem' }}>
+                <button className="btn-icon" onClick={() => { 
+                  setExpForm({ id: e.id, date: e.date, amount: e.amount, category: e.category, description: e.description || '', customCategory: e.category }); 
+                  setShowExpForm(true); 
+                }}><Edit2 size={12} /></button>
+                <button className="btn-icon" onClick={async () => {
+                  await supabase.from('expense_entries').delete().eq('id', e.id);
+                  removeExpenseEntry(e.id);
+                }}><Trash2 size={12} /></button>
+              </div>
             </div>
           ))}
         </div>
@@ -267,10 +324,11 @@ function LedgerTab() {
 function TaxTab() {
   const { taxDeductionTypes, addTaxType, removeTaxType, expenseEntries, incomeEntries, queueCards, settings } = useAppStore();
   const { toast } = useToast();
+  const supabase = createClient();
   const [showForm, setShowForm] = useState(false);
   const [form, setForm] = useState<Omit<TaxDeductionType, 'id'>>({ name: '', type: 'percentage', value: 50, appliesToCategory: '' });
 
-  const totalIncome = incomeEntries.reduce((s, e) => s + e.amount, 0)
+  const totalIncome = incomeEntries.filter(e => !e.isFromQueue).reduce((s, e) => s + e.amount, 0)
     + queueCards.filter((c) => c.paymentStatus === 'paid').reduce((s, c) => s + c.price * c.quantity, 0);
   const totalExpenses = expenseEntries.reduce((s, e) => s + e.amount, 0);
 
@@ -314,7 +372,18 @@ function TaxTab() {
             <input className="input" type="number" placeholder="Value" value={form.value} onChange={(e) => setForm({ ...form, value: +e.target.value })} />
             <input className="input" placeholder="Category (optional)" value={form.appliesToCategory} onChange={(e) => setForm({ ...form, appliesToCategory: e.target.value })} />
             <div style={{ display: 'flex', gap: '0.4rem' }}>
-              <button className="btn btn-primary btn-sm" onClick={() => { addTaxType(form); setShowForm(false); toast('Tax type added', 'success'); }}><Check size={13} /></button>
+              <button className="btn btn-primary btn-sm" onClick={async () => { 
+                const { data: { user } } = await supabase.auth.getUser();
+                if (!user) return toast('Not logged in', 'error');
+                const { data, error } = await supabase.from('tax_deduction_types').insert({
+                  user_id: user.id, name: form.name, type: form.type, value: form.value, applies_to_category: form.appliesToCategory
+                }).select('id').single();
+                if (error) return toast(`DB Error: ${error.message}`, 'error');
+                
+                addTaxType({ id: data.id, ...form }); 
+                setShowForm(false); 
+                toast('Tax type added', 'success'); 
+              }}><Check size={13} /></button>
               <button className="btn btn-ghost btn-sm" onClick={() => setShowForm(false)}><X size={13} /></button>
             </div>
           </div>
@@ -325,7 +394,10 @@ function TaxTab() {
             <span style={{ flex: 1, fontWeight: 600 }}>{t.name}</span>
             <span className="badge badge-orange">{t.value}{t.type === 'percentage' ? '%' : ` ${settings.currency}`}</span>
             {t.appliesToCategory && <span className="badge badge-gray">{t.appliesToCategory}</span>}
-            <button className="btn-icon" onClick={() => removeTaxType(t.id)}><Trash2 size={12} /></button>
+            <button className="btn-icon" onClick={async () => {
+              await supabase.from('tax_deduction_types').delete().eq('id', t.id);
+              removeTaxType(t.id);
+            }}><Trash2 size={12} /></button>
           </div>
         ))}
       </div>

@@ -14,6 +14,7 @@ interface ImageCropperModalProps {
 export function ImageCropperModal({ imageSrc, onCropDone, onCancel, aspectRatio }: ImageCropperModalProps) {
   const [crop, setCrop] = useState<Crop>();
   const [completedCrop, setCompletedCrop] = useState<Crop>();
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const imgRef = useRef<HTMLImageElement>(null);
 
   function onImageLoad(e: React.SyntheticEvent<HTMLImageElement>) {
@@ -30,8 +31,9 @@ export function ImageCropperModal({ imageSrc, onCropDone, onCancel, aspectRatio 
     }
   }
 
-  const handleComplete = () => {
+  const handleComplete = async () => {
     if (!completedCrop || !imgRef.current) return onCancel();
+    setIsSubmitting(true);
 
     const canvas = document.createElement('canvas');
     const image = imgRef.current;
@@ -85,7 +87,10 @@ export function ImageCropperModal({ imageSrc, onCropDone, onCancel, aspectRatio 
       compressedFull = fullCanvas.toDataURL('image/jpeg', 0.85);
     }
 
-    onCropDone({ full: compressedFull, thumb });
+    // Use setTimeout to allow UI to update to loading state before heavy processing
+    setTimeout(async () => {
+      onCropDone({ full: compressedFull, thumb });
+    }, 50);
   };
 
   if (typeof document === 'undefined') return null;
@@ -122,8 +127,10 @@ export function ImageCropperModal({ imageSrc, onCropDone, onCancel, aspectRatio 
         </div>
 
         <div style={{ padding: '1rem', borderTop: '1px solid var(--border)', display: 'flex', justifyContent: 'flex-end', gap: '0.5rem' }}>
-          <button className="btn btn-ghost" onClick={onCancel}>Cancel</button>
-          <button className="btn btn-primary" onClick={handleComplete}><Check size={16} /> Apply Crop</button>
+          <button className="btn btn-ghost" onClick={onCancel} disabled={isSubmitting}>Cancel</button>
+          <button className="btn btn-primary" onClick={handleComplete} disabled={isSubmitting}>
+            {isSubmitting ? 'Processing...' : <><Check size={16} /> Apply Crop</>}
+          </button>
         </div>
       </div>
     </div>,
