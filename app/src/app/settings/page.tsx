@@ -207,37 +207,6 @@ export default function SettingsPage() {
         </div>
       </div>
 
-      {/* Theme & Language */}
-      <div className="glass" style={{ padding: '1.5rem' }}>
-        <h2 style={{ fontWeight: 700, marginBottom: '1.25rem' }}>Personalization</h2>
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1.5rem' }}>
-          <div className="form-group">
-            <label className="label">Theme Mode</label>
-            <div style={{ display: 'flex', gap: '0.5rem' }}>
-              {(['dark', 'light'] as const).map((m) => (
-                <button key={m} onClick={() => setD('theme', m)}
-                  style={{ flex: 1 }}
-                  className={draft.theme === m ? 'btn btn-primary btn-sm' : 'btn btn-ghost btn-sm'}>
-                  {m === 'dark' ? '🌙 Dark' : '☀️ Light'}
-                </button>
-              ))}
-            </div>
-          </div>
-          <div className="form-group">
-            <label className="label">Language</label>
-            <div style={{ display: 'flex', gap: '0.5rem' }}>
-              {(['en', 'th'] as const).map((l) => (
-                <button key={l} onClick={() => setD('language', l)}
-                  style={{ flex: 1 }}
-                  className={draft.language === l ? 'btn btn-primary btn-sm' : 'btn btn-ghost btn-sm'}>
-                  {l === 'en' ? '🇺🇸 English' : '🇹🇭 ภาษาไทย'}
-                </button>
-              ))}
-            </div>
-          </div>
-        </div>
-      </div>
-
       {/* Effects */}
       <div className="glass" style={{ padding: '1.5rem' }}>
         <h2 style={{ fontWeight: 700, marginBottom: '1rem' }}>Effects & Animations</h2>

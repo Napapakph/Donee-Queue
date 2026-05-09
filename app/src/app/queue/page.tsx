@@ -11,7 +11,6 @@ import { ImageLightbox } from '../../components/ImageLightbox';
 import { useToast } from '@/components/ToastProvider';
 import { createClient } from '@/lib/supabase/client';
 import { uploadBase64Image } from '@/lib/upload';
-import { useTranslation } from '@/hooks/useTranslation';
 
 type ViewMode = 'cards' | 'calendar';
 type Category = 'all' | 'waiting' | 'working' | 'completed';
@@ -21,7 +20,6 @@ export default function QueuePage({ externalData }: { externalData?: any }) {
   const data = externalData || storeData;
   const { role, queueCards, updateCard, removeCard, updateCardProgress, workTypes, scaleTypes, platforms, settings, profile, toggleBusyDay } = data;
   const { toast } = useToast();
-  const { t } = useTranslation();
   const isUser = role === 'user' || role === 'admin';
   const supabase = createClient();
 
@@ -90,14 +88,14 @@ export default function QueuePage({ externalData }: { externalData?: any }) {
         </div>
         <div style={{ display: 'flex', gap: '0.5rem' }}>
           <button className={`btn ${viewMode === 'cards' ? 'btn-primary' : 'btn-ghost'} btn-sm`} onClick={() => setViewMode('cards')}>
-            <LayoutDashboard size={14} /> {t('my_commissions')}
+            <LayoutDashboard size={14} /> Cards
           </button>
           <button className={`btn ${viewMode === 'calendar' ? 'btn-primary' : 'btn-ghost'} btn-sm`} onClick={() => setViewMode('calendar')}>
-            <Calendar size={14} /> {t('calendar')}
+            <Calendar size={14} /> Calendar
           </button>
           {isUser && (
             <button className="btn btn-primary btn-sm" onClick={() => { setEditCard(null); setShowModal(true); }}>
-              <Plus size={14} /> {t('add_queue')}
+              <Plus size={14} /> Add Commission
             </button>
           )}
         </div>
@@ -108,15 +106,15 @@ export default function QueuePage({ externalData }: { externalData?: any }) {
         <div style={{ display: 'flex', gap: '1rem', marginBottom: '2rem', flexWrap: 'wrap' }}>
           <div className="glass" style={{ padding: '1rem', flex: 1, minWidth: 160, textAlign: 'center', borderBottom: '3px solid var(--accent)' }}>
             <div style={{ fontSize: '1.4rem', fontWeight: 800, color: 'var(--accent)' }}>{settings.currency}{totalIncome.toLocaleString()}</div>
-            <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>{t('confirmed_income')}</div>
+            <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>Confirmed Income</div>
           </div>
           <div className="glass" style={{ padding: '1rem', flex: 1, minWidth: 160, textAlign: 'center', borderBottom: '3px solid var(--warning)' }}>
             <div style={{ fontSize: '1.4rem', fontWeight: 800, color: 'var(--warning)' }}>{filteredCards.filter((c: any) => c.paymentStatus === 'deposit').length}</div>
-            <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>{t('deposits_paid')}</div>
+            <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>Deposits Paid</div>
           </div>
           <div className="glass" style={{ padding: '1rem', flex: 1, minWidth: 160, textAlign: 'center', borderBottom: '3px solid var(--danger)' }}>
             <div style={{ fontSize: '1.4rem', fontWeight: 800, color: 'var(--danger)' }}>{filteredCards.filter((c: any) => c.paymentStatus === 'unpaid').length}</div>
-            <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>{t('awaiting_payment')}</div>
+            <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>Awaiting Payment</div>
           </div>
         </div>
       )}
@@ -124,7 +122,7 @@ export default function QueuePage({ externalData }: { externalData?: any }) {
       {/* Tabs / Filters */}
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '1rem', marginBottom: '1.5rem' }}>
         <div className="tab-bar" style={{ maxWidth: 500 }}>
-          {([['all', t('all')], ['waiting', t('waiting')], ['working', t('working')], ['completed', t('complete')]] as [Category, string][]).map(([cat, label]) => (
+          {([['all', 'All'], ['waiting', 'Waiting'], ['working', 'Working'], ['completed', 'Completed']] as [Category, string][]).map(([cat, label]) => (
             <button key={cat} className={`tab ${category === cat ? 'active' : ''}`} onClick={() => setCategory(cat)}>
               {label} <span style={{ opacity: 0.5, fontSize: '0.7rem', marginLeft: '0.2rem' }}>({countFor(cat)})</span>
             </button>
@@ -137,22 +135,22 @@ export default function QueuePage({ externalData }: { externalData?: any }) {
         <div style={{ display: 'flex', gap: '0.75rem', flexWrap: 'wrap', alignItems: 'center', marginBottom: '1.25rem' }}>
           <input
             className="input"
-            placeholder={t('search_customer')}
+            placeholder="Search customer..."
             style={{ width: 'auto', fontSize: '0.8rem', minWidth: 200 }}
             value={search}
             onChange={(e) => setSearch(e.target.value)}
           />
           <select className="select" style={{ width: 'auto', fontSize: '0.8rem', minWidth: 140 }}
             value={filterPlatform} onChange={(e) => setFilterPlatform(e.target.value)}>
-            <option value="">{t('all_platforms')}</option>
+            <option value="">All Platforms</option>
             {platforms.map((p: any) => <option key={p.id} value={p.id}>{p.name}</option>)}
           </select>
           <select className="select" style={{ width: 'auto', fontSize: '0.8rem', minWidth: 140 }}
             value={filterPayment} onChange={(e) => setFilterPayment(e.target.value)}>
-            <option value="">{t('all_statuses')}</option>
-            <option value="unpaid">{t('unpaid')}</option>
-            <option value="deposit">{t('deposit')}</option>
-            <option value="paid">{t('paid')}</option>
+            <option value="">All Payment</option>
+            <option value="unpaid">Unpaid</option>
+            <option value="deposit">Deposit</option>
+            <option value="paid">Paid</option>
           </select>
           <button className="btn btn-ghost btn-sm" onClick={() => setShowIncome(!showIncome)}>
             {showIncome ? <EyeOff size={14} /> : <Eye size={14} />} {showIncome ? 'Hide' : 'Show'} Income

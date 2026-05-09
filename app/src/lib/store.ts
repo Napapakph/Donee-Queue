@@ -17,7 +17,6 @@ const defaultSettings: AppSettings = {
   secondaryColor: '#6366f1',
   textColor: '#ffffff',
   theme: 'dark',
-  language: 'th',
   presetTheme: 'midnight-purple',
   bgType: 'gradient',
   bgColor1: '#0d0d14',

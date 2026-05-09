@@ -9,14 +9,12 @@ import {
 import { useAppStore } from '@/lib/store';
 import { useAuth } from '@/components/AuthProvider';
 import { useToast } from '@/components/ToastProvider';
-import { useTranslation } from '@/hooks/useTranslation';
-import { TranslationKey } from '@/lib/translations';
 
-const navLinks: { href: string; labelKey: TranslationKey; icon: any; userOnly?: boolean }[] = [
-  { href: '/commission', labelKey: 'commission', icon: Palette },
-  { href: '/queue', labelKey: 'queue', icon: LayoutDashboard },
-  { href: '/analytics', labelKey: 'analytics', icon: BarChart3, userOnly: true },
-  { href: '/settings', labelKey: 'settings', icon: Settings, userOnly: true },
+const navLinks = [
+  { href: '/commission', label: 'Commission Art', icon: Palette },
+  { href: '/queue', label: 'Queue', icon: LayoutDashboard },
+  { href: '/analytics', label: 'Analytics', icon: BarChart3, userOnly: true },
+  { href: '/settings', label: 'Settings', icon: Settings, userOnly: true },
 ];
 
 export function TopBar() {
@@ -25,7 +23,6 @@ export function TopBar() {
   const { role, setRole, profile, notifications } = useAppStore();
   const { user, signOut } = useAuth();
   const { toast } = useToast();
-  const { t } = useTranslation();
   const [mobileOpen, setMobileOpen] = useState(false);
   const [profileOpen, setProfileOpen] = useState(false);
 
@@ -66,7 +63,7 @@ export function TopBar() {
           {/* Desktop Links */}
           <div style={{ display: 'flex', alignItems: 'center', gap: '0.25rem', flex: 1, justifyContent: 'center' }}
             className="desktop-nav">
-            {visibleLinks.map(({ href, labelKey, icon: Icon }) => {
+            {visibleLinks.map(({ href, label, icon: Icon }) => {
               const targetHref = slug ? `/${slug as string}${href}` : href;
               const active = pathname === targetHref || pathname.startsWith(`${targetHref}/`);
               return (
@@ -83,7 +80,7 @@ export function TopBar() {
                   transition: 'all 0.2s',
                 }}>
                   <Icon size={15} />
-                  {t(labelKey)}
+                  {label}
                 </Link>
               );
             })}
@@ -123,7 +120,7 @@ export function TopBar() {
             {/* Login button (guest) */}
             {!user && (
               <Link href="/auth/login" className="btn btn-primary btn-sm" style={{ gap: '0.4rem', textDecoration: 'none' }}>
-                <LogIn size={13} /> {t('login')}
+                <LogIn size={13} /> Log In
               </Link>
             )}
 
@@ -198,7 +195,7 @@ export function TopBar() {
                     onMouseEnter={(e) => (e.currentTarget.style.background = 'rgba(168,85,247,0.1)')}
                     onMouseLeave={(e) => (e.currentTarget.style.background = 'transparent')}
                   >
-                    <User size={14} /> {t('profile')}
+                    <User size={14} /> My Profile
                   </Link>
                   <div style={{ height: 1, background: 'var(--border)' }} />
                   {user && (
@@ -213,7 +210,7 @@ export function TopBar() {
                       onMouseEnter={(e) => (e.currentTarget.style.background = 'rgba(239,68,68,0.1)')}
                       onMouseLeave={(e) => (e.currentTarget.style.background = 'transparent')}
                     >
-                      <LogOut size={14} /> {t('logout')}
+                      <LogOut size={14} /> Sign Out
                     </button>
                   )}
                 </div>
@@ -248,7 +245,7 @@ export function TopBar() {
             <div style={{ padding: '0.5rem 0 1rem', borderBottom: '1px solid var(--border)', marginBottom: '0.5rem' }}>
               <span className="gradient-text" style={{ fontWeight: 800 }}>{profile.displayName}</span>
             </div>
-            {visibleLinks.map(({ href, labelKey, icon: Icon }) => {
+            {visibleLinks.map(({ href, label, icon: Icon }) => {
               const targetHref = slug ? `/${slug as string}${href}` : href;
               const active = pathname === targetHref || pathname.startsWith(`${targetHref}/`);
               return (
@@ -259,7 +256,7 @@ export function TopBar() {
                   textDecoration: 'none', fontSize: '0.9rem', fontWeight: 600,
                   background: active ? 'rgba(168,85,247,0.1)' : 'transparent',
                 }}>
-                  <Icon size={16} /> {t(labelKey)}
+                  <Icon size={16} /> {label}
                 </Link>
               )
             })}
