@@ -41,6 +41,46 @@ export default function AnalyticsPage() {
     value: queueCards.filter((c) => c.platformId === p.id).length,
   })).filter((d) => d.value > 0);
 
+  // Daily income (last 30 days)
+  const dailyMap: Record<string, number> = {};
+  const today = new Date();
+  for (let i = 29; i >= 0; i--) {
+    const d = new Date(today);
+    d.setDate(d.getDate() - i);
+    dailyMap[format(d, 'yyyy-MM-dd')] = 0;
+  }
+
+  [...incomeEntries, ...queueCards.filter((c) => c.paymentStatus === 'paid').map((c) => ({
+    date: c.commissionDate,
+    amount: c.price * c.quantity,
+    isFromQueue: true,
+  }))].forEach((e) => {
+    if (dailyMap[e.date] !== undefined) {
+      dailyMap[e.date] += e.amount;
+    }
+  });
+  const dailyData = Object.entries(dailyMap).map(([date, income]) => ({ 
+    date: format(parseISO(date), 'dd MMM'), 
+    fullDate: date,
+    income 
+  }));
+
+  // Hourly ordering peak
+  const hourlyMap: Record<string, number> = {};
+  for (let i = 0; i < 24; i++) hourlyMap[i.toString().padStart(2, '0')] = 0;
+  
+  queueCards.forEach(c => {
+    if (c.commissionTime) {
+      const hour = c.commissionTime.split(':')[0];
+      hourlyMap[hour] = (hourlyMap[hour] || 0) + 1;
+    } else {
+      // Fallback to createdAt hour if no commissionTime
+      const hour = format(new Date(c.createdAt), 'HH');
+      hourlyMap[hour] = (hourlyMap[hour] || 0) + 1;
+    }
+  });
+  const hourlyData = Object.entries(hourlyMap).map(([hour, count]) => ({ hour: `${hour}:00`, count }));
+
   // Monthly income (last 12 months)
   const monthlyMap: Record<string, number> = {};
   [...incomeEntries, ...queueCards.filter((c) => c.paymentStatus === 'paid').map((c) => ({
@@ -89,52 +129,73 @@ export default function AnalyticsPage() {
             ))}
           </div>
 
-          {/* Monthly income chart */}
-          <div className="glass" style={{ padding: '1.5rem' }}>
-            <h3 style={{ fontWeight: 700, marginBottom: '1rem' }}>Monthly Income</h3>
-            {monthlyData.length === 0 ? (
-              <p style={{ color: 'var(--text-muted)', fontSize: '0.875rem' }}>No data yet.</p>
-            ) : (
-              <ResponsiveContainer width="100%" height={200}>
-                <LineChart data={monthlyData}>
-                  <XAxis dataKey="month" tick={{ fill: 'var(--text-muted)', fontSize: 11 }} axisLine={false} tickLine={false} />
-                  <YAxis tick={{ fill: 'var(--text-muted)', fontSize: 11 }} axisLine={false} tickLine={false} />
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(500px, 1fr))', gap: '1.5rem' }}>
+            {/* Daily Trend */}
+            <div className="glass" style={{ padding: '1.5rem' }}>
+              <h3 style={{ fontWeight: 700, marginBottom: '1rem' }}>Daily Income Trend (Last 30 Days)</h3>
+              <ResponsiveContainer width="100%" height={250}>
+                <LineChart data={dailyData}>
+                  <XAxis dataKey="date" tick={{ fill: 'var(--text-muted)', fontSize: 10 }} axisLine={false} tickLine={false} interval={2} />
+                  <YAxis tick={{ fill: 'var(--text-muted)', fontSize: 10 }} axisLine={false} tickLine={false} />
                   <Tooltip contentStyle={{ background: '#160d28', border: '1px solid rgba(168,85,247,0.3)', borderRadius: 8, color: 'var(--text-primary)' }} />
-                  <Line type="monotone" dataKey="income" stroke="#a855f7" strokeWidth={2.5} dot={{ fill: '#a855f7', r: 4 }} />
+                  <Line type="monotone" dataKey="income" stroke="var(--accent)" strokeWidth={3} dot={false} activeDot={{ r: 6 }} />
                 </LineChart>
               </ResponsiveContainer>
-            )}
+            </div>
+
+            {/* Monthly Chart */}
+            <div className="glass" style={{ padding: '1.5rem' }}>
+              <h3 style={{ fontWeight: 700, marginBottom: '1rem' }}>Monthly Income (Last 12 Months)</h3>
+              <ResponsiveContainer width="100%" height={250}>
+                <BarChart data={monthlyData}>
+                  <XAxis dataKey="month" tick={{ fill: 'var(--text-muted)', fontSize: 11 }} axisLine={false} tickLine={false} />
+                  <YAxis tick={{ fill: 'var(--text-muted)', fontSize: 11 }} axisLine={false} tickLine={false} />
+                  <Tooltip cursor={{fill: 'rgba(255,255,255,0.05)'}} contentStyle={{ background: '#160d28', border: '1px solid rgba(168,85,247,0.3)', borderRadius: 8, color: 'var(--text-primary)' }} />
+                  <Bar dataKey="income" fill="#6366f1" radius={[6, 6, 0, 0]} />
+                </BarChart>
+              </ResponsiveContainer>
+            </div>
           </div>
 
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '1.5rem' }}>
+            {/* Order Time Peak */}
+            <div className="glass" style={{ padding: '1.5rem' }}>
+              <h3 style={{ fontWeight: 700, marginBottom: '1rem' }}>Order Peak Hours</h3>
+              <ResponsiveContainer width="100%" height={200}>
+                <BarChart data={hourlyData}>
+                  <XAxis dataKey="hour" tick={{ fill: 'var(--text-muted)', fontSize: 10 }} axisLine={false} tickLine={false} interval={3} />
+                  <Tooltip cursor={{fill: 'rgba(255,255,255,0.05)'}} contentStyle={{ background: '#160d28', border: '1px solid rgba(168,85,247,0.3)', borderRadius: 8 }} />
+                  <Bar dataKey="count" fill="var(--success)" radius={[4, 4, 0, 0]} />
+                </BarChart>
+              </ResponsiveContainer>
+              <p style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginTop: '0.5rem', textAlign: 'center' }}>
+                Analyze what time customers usually place orders.
+              </p>
+            </div>
+
             {/* Work type sales */}
             <div className="glass" style={{ padding: '1.5rem' }}>
               <h3 style={{ fontWeight: 700, marginBottom: '1rem' }}>Sales by Work Type</h3>
-              {workTypeSales.length === 0 ? <p style={{ color: 'var(--text-muted)', fontSize: '0.875rem' }}>No data yet.</p> : (
-                <ResponsiveContainer width="100%" height={180}>
-                  <BarChart data={workTypeSales}>
-                    <XAxis dataKey="name" tick={{ fill: 'var(--text-muted)', fontSize: 10 }} axisLine={false} tickLine={false} />
-                    <YAxis tick={{ fill: 'var(--text-muted)', fontSize: 10 }} axisLine={false} tickLine={false} />
-                    <Tooltip contentStyle={{ background: '#160d28', border: '1px solid rgba(168,85,247,0.3)', borderRadius: 8, color: 'var(--text-primary)' }} />
-                    <Bar dataKey="count" fill="#a855f7" radius={[4, 4, 0, 0]} />
-                  </BarChart>
-                </ResponsiveContainer>
-              )}
+              <ResponsiveContainer width="100%" height={200}>
+                <BarChart data={workTypeSales}>
+                  <XAxis dataKey="name" tick={{ fill: 'var(--text-muted)', fontSize: 10 }} axisLine={false} tickLine={false} />
+                  <Tooltip cursor={{fill: 'rgba(255,255,255,0.05)'}} contentStyle={{ background: '#160d28', border: '1px solid rgba(168,85,247,0.3)', borderRadius: 8 }} />
+                  <Bar dataKey="count" fill="#a855f7" radius={[4, 4, 0, 0]} />
+                </BarChart>
+              </ResponsiveContainer>
             </div>
 
             {/* Platform pie chart */}
             <div className="glass" style={{ padding: '1.5rem' }}>
               <h3 style={{ fontWeight: 700, marginBottom: '1rem' }}>Clients by Platform</h3>
-              {platformData.length === 0 ? <p style={{ color: 'var(--text-muted)', fontSize: '0.875rem' }}>No data yet.</p> : (
-                <ResponsiveContainer width="100%" height={180}>
-                  <PieChart>
-                    <Pie data={platformData} dataKey="value" nameKey="name" cx="50%" cy="50%" outerRadius={70} label={({ name, percent }) => `${name} ${((percent || 0) * 100).toFixed(0)}%`} labelLine={false} fontSize={10}>
-                      {platformData.map((_, i) => <Cell key={i} fill={COLORS[i % COLORS.length]} />)}
-                    </Pie>
-                    <Tooltip contentStyle={{ background: '#160d28', border: '1px solid rgba(168,85,247,0.3)', borderRadius: 8, color: 'var(--text-primary)' }} />
-                  </PieChart>
-                </ResponsiveContainer>
-              )}
+              <ResponsiveContainer width="100%" height={200}>
+                <PieChart>
+                  <Pie data={platformData} dataKey="value" nameKey="name" cx="50%" cy="50%" outerRadius={60} label={({ name, percent }) => `${name} ${((percent || 0) * 100).toFixed(0)}%`} labelLine={false} fontSize={10}>
+                    {platformData.map((_, i) => <Cell key={i} fill={COLORS[i % COLORS.length]} />)}
+                  </Pie>
+                  <Tooltip contentStyle={{ background: '#160d28', border: '1px solid rgba(168,85,247,0.3)', borderRadius: 8 }} />
+                </PieChart>
+              </ResponsiveContainer>
             </div>
           </div>
         </div>

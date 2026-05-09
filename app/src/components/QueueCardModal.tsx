@@ -46,6 +46,7 @@ export function QueueCardModal({ card, onClose }: Props) {
     briefReceived: false,
     paymentStatus: 'unpaid',
     commissionDate: today,
+    commissionTime: format(new Date(), 'HH:mm'),
     deadlineDate: format(addDays(new Date(), workTypes[0]?.estimatedDurationDays || 7), 'yyyy-MM-dd'),
     progress: 'Waiting',
     notes: '',
@@ -83,6 +84,7 @@ export function QueueCardModal({ card, onClose }: Props) {
       briefReceived: card.briefReceived,
       paymentStatus: card.paymentStatus,
       commissionDate: card.commissionDate,
+      commissionTime: card.commissionTime || format(new Date(card.createdAt), 'HH:mm'),
       deadlineDate: card.deadlineDate,
       progress: card.progress,
       notes: card.notes,
@@ -326,11 +328,24 @@ export function QueueCardModal({ card, onClose }: Props) {
           {/* Dates */}
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.75rem' }}>
             <div className="form-group">
-              <label className="label">Commission Date</label>
-              <MinimalDatePicker
-                value={form.commissionDate}
-                onChange={(val) => set('commissionDate', val)}
-              />
+              <label className="label">Commission Date & Time</label>
+              <div style={{ display: 'flex', gap: '0.5rem' }}>
+                <div style={{ flex: 2 }}>
+                  <MinimalDatePicker
+                    value={form.commissionDate}
+                    onChange={(val) => set('commissionDate', val)}
+                  />
+                </div>
+                <div style={{ flex: 1 }}>
+                  <input 
+                    type="time" 
+                    className="input" 
+                    value={form.commissionTime}
+                    onChange={(e) => set('commissionTime', e.target.value)}
+                    style={{ height: '100%', padding: '0.6rem' }}
+                  />
+                </div>
+              </div>
             </div>
             <div className="form-group">
               <label className="label">Deadline Date — auto-suggested</label>

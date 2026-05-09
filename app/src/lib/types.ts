@@ -53,6 +53,7 @@ export interface QueueCard {
   briefReceived: boolean;
   paymentStatus: PaymentStatus;
   commissionDate: string; // ISO date
+  commissionTime?: string; // HH:mm format
   deadlineDate: string;   // ISO date
   progress: ProgressStage;
   notes: string;
