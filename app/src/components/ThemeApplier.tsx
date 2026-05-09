@@ -71,6 +71,13 @@ export function ThemeApplier() {
     const blur = Math.round((settings.glassmorphismIntensity / 100) * 24);
     root.style.setProperty('--glass-blur', `${blur}px`);
 
+    // Theme Mode (Dark/Light)
+    if (settings.theme === 'light') {
+      document.body.classList.add('light');
+    } else {
+      document.body.classList.remove('light');
+    }
+
   }, [settings]);
 
   return null;

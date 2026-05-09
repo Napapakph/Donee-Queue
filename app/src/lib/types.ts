@@ -136,7 +136,8 @@ export interface AppSettings {
   accentColor: string;
   secondaryColor: string;
   textColor: string;
-  theme: 'dark' | 'light' | 'system';
+  theme: 'dark' | 'light';
+  language: 'en' | 'th';
   presetTheme: string;
   // Background
   bgType: 'solid' | 'gradient' | 'pattern' | 'image';
