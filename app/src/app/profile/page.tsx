@@ -5,6 +5,8 @@ import { useAppStore } from '@/lib/store';
 import { useToast } from '@/components/ToastProvider';
 import { createClient } from '@/lib/supabase/client';
 import type { SocialPlatform, ContactChannel, UserProfile } from '@/lib/types';
+import { ImageCropperModal } from '@/components/ImageCropperModal';
+import { uploadBase64Image } from '@/lib/upload';
 
 const SOCIAL_OPTIONS: { value: SocialPlatform; label: string; icon: string }[] = [
   { value: 'vgen', label: 'VGen', icon: '🎨' },
@@ -36,6 +38,7 @@ export default function ProfilePage() {
   const [bio, setBio] = useState(profile.bio);
   const [showAddChannel, setShowAddChannel] = useState(false);
   const [newCh, setNewCh] = useState<Omit<ContactChannel, 'id'>>({ platform: 'x', url: '', visible: true });
+  const [imageToCrop, setImageToCrop] = useState<string | null>(null);
 
   const supabase = createClient();
 
@@ -62,12 +65,28 @@ export default function ProfilePage() {
     const file = e.target.files?.[0];
     if (!file) return;
     const reader = new FileReader();
-    reader.onload = async (ev) => {
-      updateProfile({ avatar: ev.target?.result as string });
-      await syncToDB({});
-      toast('Avatar updated!', 'success');
+    reader.onload = (ev) => {
+      setImageToCrop(ev.target?.result as string);
     };
     reader.readAsDataURL(file);
+    // Reset input
+    e.target.value = '';
+  };
+
+  const handleCropDone = async (res: { thumb: string }) => {
+    setImageToCrop(null);
+    toast('Uploading avatar...', 'info');
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) throw new Error('Not authenticated');
+      
+      const url = await uploadBase64Image(res.thumb, user.id, 'avatars');
+      updateProfile({ avatar: url });
+      await syncToDB({ avatar: url });
+      toast('Avatar updated!', 'success');
+    } catch (err: any) {
+      toast(`Upload failed: ${err.message}`, 'error');
+    }
   };
 
   const handleAddChannel = async () => {
@@ -206,6 +225,15 @@ export default function ProfilePage() {
           </div>
         )}
       </div>
+      {/* Cropper Modal */}
+      {imageToCrop && (
+        <ImageCropperModal
+          imageSrc={imageToCrop}
+          aspectRatio={1}
+          onCancel={() => setImageToCrop(null)}
+          onCropDone={handleCropDone}
+        />
+      )}
     </div>
   );
 }

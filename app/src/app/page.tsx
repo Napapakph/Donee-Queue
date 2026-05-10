@@ -5,15 +5,15 @@ import { useAppStore } from '@/lib/store';
 
 export default function HomePage({ externalData, slug: propSlug }: { externalData?: any, slug?: string }) {
   const storeData = useAppStore();
-  
+
   // Safety check: Next.js might pass page props to externalData if used as a main page.
   // We only use externalData if it contains our expected profile data.
   const isExternal = !!(externalData && externalData.profile);
   const data = isExternal ? externalData : storeData;
   const slug = isExternal ? propSlug : undefined;
-  
+
   const { role, profile, queueCards = [], settings = {} } = data;
-  
+
   const currency = settings.currency || '฿';
   const totalActive = (queueCards || []).filter((c: any) => c.progress !== 'Complete').length;
   const totalIncome = (queueCards || [])
@@ -29,7 +29,7 @@ export default function HomePage({ externalData, slug: propSlug }: { externalDat
         <div style={{ marginBottom: '1.5rem' }}>
           {profile.avatar ? (
             <img src={profile.avatar} alt="avatar" style={{
-              width: 96, height: 96, borderRadius: '50%', objectFit: 'cover',
+              width: 200, height: 200, borderRadius: '50%', objectFit: 'cover',
               border: '3px solid var(--accent)',
               boxShadow: '0 0 32px var(--accent-glow)',
               margin: '0 auto 1rem',
