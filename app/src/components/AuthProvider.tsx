@@ -25,7 +25,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const {
     updateProfile, updateSettings, setRole,
-    workTypes, scaleTypes, platforms, queueCards, settings,
+    workTypes, platforms, queueCards, settings,
   } = useAppStore();
 
   // ── Load data from Supabase into store ─────────────────────────────────────
@@ -52,26 +52,26 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       if (profile.is_pro) useAppStore.setState({ isPro: true });
     }
 
-    // Work types
+    // Work & Scale types
     const { data: wts } = await supabase.from('work_types').select('*').eq('user_id', u.id);
+    const { data: scs } = await supabase.from('scale_types').select('*').eq('user_id', u.id);
+
     if (wts?.length) {
       useAppStore.setState({
         workTypes: wts.map((w: any) => ({
-          id: w.id, name: w.name, description: w.description,
-          basePrice: w.base_price, estimatedDurationDays: w.estimated_duration_days, visible: w.visible,
-          examples: w.examples || [],
-        })),
-      });
-    }
-
-    // Scale types
-    const { data: scs } = await supabase.from('scale_types').select('*').eq('user_id', u.id);
-    if (scs?.length) {
-      useAppStore.setState({
-        scaleTypes: scs.map((s: any) => ({
-          id: s.id, name: s.name, priceModifier: s.price_modifier,
-          priceModifierType: s.price_modifier_type, durationModifierDays: s.duration_modifier_days,
-          examples: s.examples || [],
+          id: w.id, 
+          title: w.name, 
+          description: w.description,
+          visible: w.visible,
+          scales: (scs || [])
+            .filter((s: any) => s.work_type_id === w.id)
+            .map((s: any) => ({
+              id: s.id, 
+              title: s.name, 
+              basePrice: s.base_price || 0,
+              images: s.examples || [],
+              estimatedTime: s.estimated_time || '3-5 days'
+            })),
         })),
       });
     }

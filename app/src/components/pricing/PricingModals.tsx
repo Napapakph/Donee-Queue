@@ -1,7 +1,7 @@
 'use client';
 import { useState, useRef } from 'react';
 import { X, Check, Plus, Trash2, Image as ImageIcon, Upload } from 'lucide-react';
-import { WorkType, ScaleType, PricingExtra } from '@/lib/types';
+import { WorkType, ScaleType, PricingExtra } from '../../lib/types';
 import { ImageCropperModal } from '../ImageCropperModal';
 
 interface WorkTypeModalProps {

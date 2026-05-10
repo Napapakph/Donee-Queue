@@ -4,7 +4,7 @@ import { Check, X, Plus } from 'lucide-react';
 import { useAppStore } from '@/lib/store';
 import { useToast } from '@/components/ToastProvider';
 import { createClient } from '@/lib/supabase/client';
-import type { QueueCard, ProgressStage, PaymentStatus } from '@/lib/types';
+import type { QueueCard, ScaleType, ProgressStage, PaymentStatus } from '@/lib/types';
 import { addDays, format } from 'date-fns';
 import { MinimalDatePicker } from './MinimalDatePicker';
 import { MinimalTimePicker } from './MinimalTimePicker';
@@ -27,31 +27,37 @@ function calcPrice(basePrice: number, scaleModifier: number, scaleType: 'flat' |
 }
 
 export function QueueCardModal({ card, onClose }: Props) {
-  const { addCard, updateCard, workTypes, scaleTypes, platforms, addPlatform, settings } = useAppStore();
+  const { addCard, updateCard, workTypes, platforms, addPlatform, settings } = useAppStore();
   const { toast } = useToast();
   const supabase = createClient();
 
   const today = format(new Date(), 'yyyy-MM-dd');
 
-  const [form, setForm] = useState<Omit<QueueCard, 'id' | 'createdAt' | 'updatedAt'>>({
-    customerName: '',
-    platformId: platforms[0]?.id || '',
-    workTypeId: workTypes[0]?.id || '',
-    scaleTypeId: undefined,
-    description: '',
-    price: workTypes[0]?.basePrice || 0,
-    isCommercial: false,
-    isPublic: settings.defaultCardPublic,
-    isNSFW: false,
-    quantity: 1,
-    briefReceived: false,
-    paymentStatus: 'unpaid',
-    commissionDate: today,
-    commissionTime: format(new Date(), 'HH:mm'),
-    deadlineDate: format(addDays(new Date(), workTypes[0]?.estimatedDurationDays || 7), 'yyyy-MM-dd'),
-    progress: 'Waiting',
-    notes: '',
-    images: [],
+  // Find current work type and its scales
+  const [form, setForm] = useState<Omit<QueueCard, 'id' | 'createdAt' | 'updatedAt'>>(() => {
+    const firstWT = workTypes[0];
+    const firstScale = firstWT?.scales?.[0];
+    
+    return {
+      customerName: '',
+      platformId: platforms[0]?.id || '',
+      workTypeId: firstWT?.id || '',
+      scaleTypeId: firstScale?.id,
+      description: '',
+      price: firstScale?.basePrice || 0,
+      isCommercial: false,
+      isPublic: settings.defaultCardPublic,
+      isNSFW: false,
+      quantity: 1,
+      briefReceived: false,
+      paymentStatus: 'unpaid',
+      commissionDate: today,
+      commissionTime: format(new Date(), 'HH:mm'),
+      deadlineDate: format(addDays(new Date(), 7), 'yyyy-MM-dd'), // Fallback 7 days
+      progress: 'Waiting',
+      notes: '',
+      images: [],
+    };
   });
 
   const [newPlatform, setNewPlatform] = useState('');
@@ -61,13 +67,24 @@ export function QueueCardModal({ card, onClose }: Props) {
   // Auto-calculate price & deadline when work type / scale changes
   useEffect(() => {
     const wt = workTypes.find((w) => w.id === form.workTypeId);
-    const sc = scaleTypes.find((s) => s.id === form.scaleTypeId);
     if (!wt) return;
-    const baseDays = wt.estimatedDurationDays + (sc?.durationModifierDays || 0);
+    
+    const sc = (wt.scales || []).find((s: ScaleType) => s.id === form.scaleTypeId);
+    
+    // Parse estimated time (e.g., "3-5 days" -> 5)
+    const getDays = (str?: string) => {
+      if (!str) return 7;
+      const match = str.match(/(\d+)/g);
+      if (!match) return 7;
+      return parseInt(match[match.length - 1]);
+    };
+
+    const baseDays = getDays(sc?.estimatedTime);
     const deadline = format(addDays(new Date(form.commissionDate), baseDays), 'yyyy-MM-dd');
-    const price = calcPrice(wt.basePrice, sc?.priceModifier || 0, sc?.priceModifierType || 'flat', form.quantity, form.isCommercial);
-    setForm((f) => ({ ...f, deadlineDate: deadline, price: price / form.quantity }));
-  }, [form.workTypeId, form.scaleTypeId, form.commissionDate, form.quantity, form.isCommercial]);
+    const price = sc?.basePrice || 0;
+    
+    setForm((f) => ({ ...f, deadlineDate: deadline, price: price }));
+  }, [form.workTypeId, form.scaleTypeId, form.commissionDate]);
 
   // Populate form if editing
   useEffect(() => {
@@ -182,14 +199,16 @@ export function QueueCardModal({ card, onClose }: Props) {
             <div className="form-group">
               <label className="label">Work Type *</label>
               <select className="select" value={form.workTypeId} onChange={(e) => set('workTypeId', e.target.value)}>
-                {workTypes.map((w) => <option key={w.id} value={w.id}>{w.name}</option>)}
+                {workTypes.map((w) => <option key={w.id} value={w.id}>{w.title}</option>)}
               </select>
             </div>
             <div className="form-group">
               <label className="label">Scale <span style={{ color: 'var(--text-muted)', fontSize: '0.75rem' }}>(optional)</span></label>
               <select className="select" value={form.scaleTypeId || ''} onChange={(e) => set('scaleTypeId', e.target.value || undefined)}>
-                <option value="">— None —</option>
-                {scaleTypes.map((s) => <option key={s.id} value={s.id}>{s.name}</option>)}
+                <option value="">Select Scale...</option>
+                {(workTypes.find(w => w.id === form.workTypeId)?.scales || []).map((s: ScaleType) => (
+                  <option key={s.id} value={s.id}>{s.title} ({settings.currency}{s.basePrice})</option>
+                ))}
               </select>
             </div>
           </div>

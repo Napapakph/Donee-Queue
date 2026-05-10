@@ -1,8 +1,8 @@
 'use client';
-import { ScaleType, PricingExtra } from '@/lib/types';
+import { ScaleType, PricingExtra } from '../../lib/types';
 import { Edit2, Trash2, Clock, Plus, Image as ImageIcon, ChevronLeft, ChevronRight } from 'lucide-react';
 import { useState } from 'react';
-import { useAppStore } from '@/lib/store';
+import { useAppStore } from '../../lib/store';
 
 interface ScaleTypeCardProps {
   workTypeId: string;

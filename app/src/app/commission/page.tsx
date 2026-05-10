@@ -17,7 +17,7 @@ export default function CommissionPage({ externalData }: { externalData?: any })
   const data = externalData || storeData;
   const {
     role, workTypes, addWorkType, updateWorkType, removeWorkType,
-    scaleTypes, addScaleType, updateScaleType, removeScaleType,
+    addScaleType, updateScaleType, removeScaleType,
     commissionStatus, setCommissionStatus, tos, setTos,
     showcaseImages, addShowcaseImage, updateShowcaseImage, removeShowcaseImage, settings,
   } = data;

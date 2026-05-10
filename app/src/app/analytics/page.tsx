@@ -30,7 +30,7 @@ export default function AnalyticsPage() {
 
   // ── Charts data ──────────────────────────────────────────────────────────
   const workTypeSales = workTypes.map((wt) => ({
-    name: wt.name,
+    name: wt.title,
     count: queueCards.filter((c) => c.workTypeId === wt.id).length,
     revenue: queueCards.filter((c) => c.workTypeId === wt.id && c.paymentStatus === 'paid')
       .reduce((s, c) => s + c.price * c.quantity, 0),

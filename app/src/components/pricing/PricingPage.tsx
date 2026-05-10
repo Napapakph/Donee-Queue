@@ -7,7 +7,7 @@ import { WorkTypeModal, ScaleTypeModal } from './PricingModals';
 import { ImageLightbox } from '../ImageLightbox';
 import { Plus, LayoutGrid, DollarSign, Info } from 'lucide-react';
 
-export default function PricingView() {
+export default function PricingPage() {
   const { workTypes, addWorkType, updateWorkType, addScaleType, updateScaleType, settings, role } = useAppStore();
   const isUser = role === 'user' || role === 'admin';
   

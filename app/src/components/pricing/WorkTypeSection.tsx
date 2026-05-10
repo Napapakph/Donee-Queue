@@ -1,8 +1,8 @@
 'use client';
-import { WorkType, ScaleType } from '@/lib/types';
+import { WorkType, ScaleType } from '../../lib/types';
 import { ScaleTypeCard } from './ScaleTypeCard';
 import { Edit2, Trash2, Plus, LayoutGrid, Image as ImageIcon } from 'lucide-react';
-import { useAppStore } from '@/lib/store';
+import { useAppStore } from '../../lib/store';
 
 interface WorkTypeSectionProps {
   workType: WorkType;

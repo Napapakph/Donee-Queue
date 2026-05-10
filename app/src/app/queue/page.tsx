@@ -18,7 +18,7 @@ type Category = 'all' | 'waiting' | 'working' | 'completed';
 export default function QueuePage({ externalData }: { externalData?: any }) {
   const storeData = useAppStore();
   const data = externalData || storeData;
-  const { role, queueCards, updateCard, removeCard, updateCardProgress, workTypes, scaleTypes, platforms, settings, profile, toggleBusyDay } = data;
+  const { role, queueCards, updateCard, removeCard, updateCardProgress, workTypes, platforms, settings, profile, toggleBusyDay } = data;
   const { toast } = useToast();
   const isUser = role === 'user' || role === 'admin';
   const supabase = createClient();
@@ -389,14 +389,14 @@ function DayDetailsPopup({ date, cards, isBusy, isUser, onToggleBusy, onEditCard
 function CardItem({ card, onEdit, onDelete, onStageChange, onImageClick }: {
   card: any; onEdit: () => void; onDelete: () => void; onStageChange: (stage: ProgressStage) => void; onImageClick: (imgs: string[], idx: number) => void;
 }) {
-  const { workTypes, scaleTypes, platforms, settings, role } = useAppStore();
+  const { workTypes, platforms, settings, role } = useAppStore();
   const fileRef = useRef<HTMLInputElement>(null);
   const updateCard = useAppStore(s => s.updateCard);
   const toast = useToast().toast;
 
   const isUser = role === 'user' || role === 'admin';
   const wt = workTypes.find((w: any) => w.id === card.workTypeId);
-  const sc = scaleTypes.find((s: any) => s.id === card.scaleTypeId);
+  const sc = wt?.scales?.find((s: any) => s.id === card.scaleTypeId);
   const plat = platforms.find((p: any) => p.id === card.platformId);
   const deadlineStatus = getDeadlineStatus(card.commissionDate, card.deadlineDate, settings.warningThresholdPercent);
   const complete = card.progress === 'Complete';
@@ -450,8 +450,8 @@ function CardItem({ card, onEdit, onDelete, onStageChange, onImageClick }: {
 
         {/* Type + price */}
         <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center', marginBottom: '0.6rem', flexWrap: 'wrap' }}>
-          {wt && <span className="badge badge-purple">{wt.name}</span>}
-          {sc && <span className="badge badge-blue">{sc.name}</span>}
+          {wt && <span className="badge badge-purple">{wt.title}</span>}
+          {sc && <span className="badge badge-blue">{sc.title}</span>}
           <span style={{ marginLeft: 'auto', fontWeight: 700, color: 'var(--accent)' }}>
             {settings.currency}{(card.price * card.quantity).toLocaleString()}
             {card.quantity > 1 && <span style={{ color: 'var(--text-muted)', fontSize: '0.75rem', fontWeight: 400 }}> ×{card.quantity}</span>}
