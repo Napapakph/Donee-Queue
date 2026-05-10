@@ -35,7 +35,7 @@ const defaultSettings: AppSettings = {
   defaultCardPublic: true,
   nsfwBlurForGuests: true,
   showIncomeSummaryToGuests: false,
-  watermarkType: 'none',
+  watermarkType: 'text',
   watermarkText: 'DO NOT REPOST',
 };
 

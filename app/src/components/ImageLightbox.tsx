@@ -42,21 +42,25 @@ export function ImageLightbox({ images, initialIndex = 0, onClose }: ImageLightb
 
       // Apply watermark
       if (settings.watermarkType !== 'none') {
-        if (settings.watermarkType === 'text' && settings.watermarkText) {
+        if (settings.watermarkType === 'text') {
+          const text = settings.watermarkText || 'PROTECTED';
           ctx.save();
+          ctx.shadowColor = 'rgba(0, 0, 0, 0.5)';
+          ctx.shadowBlur = 10;
+          ctx.fillStyle = 'rgba(255, 255, 255, 0.35)';
+          ctx.strokeStyle = 'rgba(0, 0, 0, 0.3)';
+          ctx.lineWidth = 2;
           ctx.translate(canvas.width / 2, canvas.height / 2);
           ctx.rotate((-30 * Math.PI) / 180);
-          
-          ctx.font = `bold ${Math.max(30, canvas.width / 15)}px sans-serif`;
-          ctx.fillStyle = 'rgba(255, 255, 255, 0.35)';
+          ctx.font = `bold ${Math.max(30, canvas.width / 12)}px sans-serif`;
           ctx.textAlign = 'center';
           ctx.textBaseline = 'middle';
-          
-          const stepX = Math.max(300, canvas.width / 3);
-          const stepY = Math.max(150, canvas.height / 4);
-          for (let x = -canvas.width; x <= canvas.width; x += stepX) {
-            for (let y = -canvas.height; y <= canvas.height; y += stepY) {
-              ctx.fillText(settings.watermarkText, x, y);
+          const stepX = Math.max(300, canvas.width / 2);
+          const stepY = Math.max(150, canvas.height / 3);
+          for (let x = -canvas.width * 1.5; x <= canvas.width * 1.5; x += stepX) {
+            for (let y = -canvas.height * 1.5; y <= canvas.height * 1.5; y += stepY) {
+              ctx.strokeText(text, x, y);
+              ctx.fillText(text, x, y);
             }
           }
           ctx.restore();

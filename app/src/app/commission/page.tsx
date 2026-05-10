@@ -8,6 +8,7 @@ import { ImageLightbox } from '@/components/ImageLightbox';
 import { ImageCropperModal } from '@/components/ImageCropperModal';
 import { parseExample, type WorkType, type ScaleType, type CommissionStatus } from '@/lib/types';
 import { uploadBase64Image } from '@/lib/upload';
+import { applyWatermark } from '@/lib/watermark';
 import PricingView from '@/components/pricing/PricingView';
 
 type Tab = 'gallery' | 'pricing' | 'tos';
@@ -49,8 +50,11 @@ export default function CommissionPage({ externalData }: { externalData?: any })
             const { data: { user } } = await supabase.auth.getUser();
             if (!user) return toast('Not logged in', 'error');
             
+            toast('Processing watermark...', 'info');
+            const watermarked = await applyWatermark(res.full, settings);
+            
             toast('Uploading image to cloud storage...', 'info');
-            const url = await uploadBase64Image(res.full, user.id, 'gallery');
+            const url = await uploadBase64Image(watermarked, user.id, 'gallery');
 
             const { data, error } = await supabase.from('showcase_images').insert({
               user_id: user.id, url, caption: file.name, is_nsfw: false

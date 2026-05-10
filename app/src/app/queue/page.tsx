@@ -9,9 +9,10 @@ import { ProgressStage, QueueCard } from '@/lib/types';
 import { QueueCardModal } from '../../components/QueueCardModal';
 import { ImageLightbox } from '../../components/ImageLightbox';
 import { CommissionReceiptModal } from '../../components/CommissionReceiptModal';
-import { useToast } from '@/components/ToastProvider';
 import { createClient } from '@/lib/supabase/client';
 import { uploadBase64Image } from '@/lib/upload';
+import { applyWatermark } from '@/lib/watermark';
+import { useToast } from '@/components/ToastProvider';
 
 type ViewMode = 'cards' | 'calendar';
 type Category = 'all' | 'waiting' | 'working' | 'completed';
@@ -415,7 +416,7 @@ function CardItem({ card, onEdit, onDelete, onStageChange, onImageClick, onShowR
   const complete = card.progress === 'Complete';
 
   const STAGES: ProgressStage[] = ['Waiting', 'Sketching', 'Adding Details', 'Complete'];
-  const maxImages = 8;
+  const maxImages = 3;
 
   const paymentColors: Record<string, string> = { unpaid: 'badge-red', deposit: 'badge-yellow', paid: 'badge-green' };
   const paymentLabels: Record<string, string> = { unpaid: 'Unpaid', deposit: 'Deposit', paid: 'Paid' };
@@ -428,20 +429,38 @@ function CardItem({ card, onEdit, onDelete, onStageChange, onImageClick, onShowR
     const supabase = createClient();
     const reader = new FileReader();
     reader.onload = async (ev) => {
-      const base64 = ev.target?.result as string;
-      toast('Uploading image...', 'info');
+      let base64 = ev.target?.result as string;
+      toast('Processing image...', 'info');
       try {
+        // Apply watermark
+        base64 = await applyWatermark(base64, settings);
+        
+        toast('Uploading image...', 'info');
         const url = await uploadBase64Image(base64, 'images', `queue/${card.id}_${Date.now()}.jpg`);
         const newImages = [...card.images, url];
         const { error } = await supabase.from('queue_cards').update({ images: newImages }).eq('id', card.id);
         if (error) throw error;
         updateCard(card.id, { images: newImages });
-        toast('Image uploaded', 'success');
+        toast('Image uploaded with watermark', 'success');
       } catch (err: any) {
         toast(`Upload failed: ${err.message}`, 'error');
       }
     };
     reader.readAsDataURL(file);
+  };
+
+  const handleRemoveImage = async (idx: number, e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (!confirm('Remove this image?')) return;
+    const supabase = createClient();
+    const newImages = card.images.filter((_: any, i: number) => i !== idx);
+    const { error } = await supabase.from('queue_cards').update({ images: newImages }).eq('id', card.id);
+    if (error) {
+      toast('Failed to remove image', 'error');
+      return;
+    }
+    updateCard(card.id, { images: newImages });
+    toast('Image removed', 'success');
   };
 
   return (
@@ -509,9 +528,20 @@ function CardItem({ card, onEdit, onDelete, onStageChange, onImageClick, onShowR
         {card.images.length > 0 && (
           <div style={{ display: 'flex', gap: '0.4rem', flexWrap: 'wrap', marginBottom: '1rem' }}>
             {card.images.map((img: string, i: number) => (
-              <div key={i} style={{ width: 60, height: 60, borderRadius: 8, overflow: 'hidden', cursor: 'pointer', border: '1px solid var(--border)' }}
+              <div key={i} style={{ width: 60, height: 60, borderRadius: 8, overflow: 'hidden', cursor: 'pointer', border: '1px solid var(--border)', position: 'relative' }}
                 onClick={() => onImageClick(card.images, i)}>
                 <img src={img} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                {isUser && (
+                  <button 
+                    onClick={(e) => handleRemoveImage(i, e)}
+                    style={{
+                      position: 'absolute', top: 2, right: 2, background: 'rgba(239, 68, 68, 0.8)', color: 'white',
+                      border: 'none', borderRadius: '4px', padding: '2px', display: 'flex', alignItems: 'center'
+                    }}
+                  >
+                    <X size={10} />
+                  </button>
+                )}
               </div>
             ))}
           </div>
