@@ -93,7 +93,7 @@ interface ScaleTypeModalProps {
 export function ScaleTypeModal({ initialData, onSave, onClose }: ScaleTypeModalProps) {
   const [title, setTitle] = useState(initialData?.title || '');
   const [description, setDescription] = useState(initialData?.description || '');
-  const [basePrice, setBasePrice] = useState(initialData?.basePrice || 0);
+  const [basePrice, setBasePrice] = useState(initialData?.basePrice?.toString() || '0');
   const [estimatedTime, setEstimatedTime] = useState(initialData?.estimatedTime || '');
   const [images, setImages] = useState<string[]>(initialData?.images || []);
   const [extraPricing, setExtraPricing] = useState<PricingExtra[]>(initialData?.extraPricing || []);
@@ -148,7 +148,7 @@ export function ScaleTypeModal({ initialData, onSave, onClose }: ScaleTypeModalP
 
           <div className="form-group">
             <label className="label">Base Price</label>
-            <input className="input" type="number" value={basePrice} onChange={e => setBasePrice(Number(e.target.value))} />
+            <input className="input" type="number" value={basePrice} onChange={e => setBasePrice(e.target.value)} />
           </div>
 
           <div className="form-group">
@@ -196,7 +196,7 @@ export function ScaleTypeModal({ initialData, onSave, onClose }: ScaleTypeModalP
         </div>
         <div className="modal-footer">
           <button className="btn btn-ghost" onClick={onClose}>Cancel</button>
-          <button className="btn btn-primary" disabled={!title} onClick={() => onSave({ title, description, basePrice, estimatedTime, images, extraPricing })}>
+          <button className="btn btn-primary" disabled={!title} onClick={() => onSave({ title, description, basePrice: Number(basePrice), estimatedTime, images, extraPricing })}>
             Save Scale Type
           </button>
         </div>
