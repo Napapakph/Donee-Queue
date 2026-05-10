@@ -95,6 +95,8 @@ export interface TaxDeductionType {
   type: 'percentage' | 'flat';
   value: number; // % or flat amount
   appliesToCategory: string; // expense category
+  multiplier?: number;
+  maxLimit?: number;
 }
 
 // ─── User Profile ─────────────────────────────────────────────────────────────
