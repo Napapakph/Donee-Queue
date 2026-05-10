@@ -126,7 +126,7 @@ export default function AnalyticsPage() {
             <h3 style={{ fontWeight: 700, marginBottom: '1rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
                🏆 Top Work Types This Month
             </h3>
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '1rem' }}>
+            <div className="grid-responsive-3">
               {[...workTypeSales].sort((a, b) => b.count - a.count).slice(0, 3).map((wt, i) => {
                 const crowns = ['👑', '🥈', '🥉'];
                 const bgColors = [
@@ -172,7 +172,7 @@ export default function AnalyticsPage() {
             ))}
           </div>
 
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(500px, 1fr))', gap: '1.5rem' }}>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 360px), 1fr))', gap: '1.5rem' }}>
             {/* Daily Trend */}
             <div className="glass" style={{ padding: '1.5rem' }}>
               <h3 style={{ fontWeight: 700, marginBottom: '1rem' }}>Daily Income Trend (Last 30 Days)</h3>
@@ -200,7 +200,7 @@ export default function AnalyticsPage() {
             </div>
           </div>
 
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '1.5rem' }}>
+          <div className="grid-responsive-3" style={{ gap: '1.5rem' }}>
             {/* Order Time Peak */}
             <div className="glass" style={{ padding: '1.5rem' }}>
               <h3 style={{ fontWeight: 700, marginBottom: '1rem' }}>Order Peak Hours</h3>
@@ -327,7 +327,7 @@ function LedgerTab() {
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
       {/* Summary Cards from Tax Tab */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(180px,1fr))', gap: '1rem' }}>
+      <div className="grid-responsive-4">
         {[
           { label: 'Total Business Income', value: `${settings.currency}${accountingTotalIncome.toLocaleString()}`, color: 'var(--success)' },
           { label: 'Total Expenses', value: `${settings.currency}${totalExpenses.toLocaleString()}`, color: 'var(--danger)' },
@@ -661,7 +661,7 @@ function TaxTab() {
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
       {/* Summary */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(180px,1fr))', gap: '1rem' }}>
+      <div className="grid-responsive-4">
         {[
           { label: 'Estimated Tax', value: `${settings.currency}${totalTax.toLocaleString()}`, color: '#ef4444' },
           { label: 'Total Business Income', value: `${settings.currency}${accountingTotalIncome.toLocaleString()}`, color: 'var(--success)' },
@@ -676,7 +676,7 @@ function TaxTab() {
         ))}
       </div>
 
-      <div style={{ display: 'grid', gridTemplateColumns: '1.5fr 1fr', gap: '1.5rem' }}>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 400px), 1fr))', gap: '1.5rem' }}>
         <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
           {/* Tax Breakdown Table */}
           <div className="glass" style={{ padding: '1.5rem' }}>
@@ -878,7 +878,7 @@ function TaxTab() {
         </div>
       </div>
 
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1.5rem' }}>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 400px), 1fr))', gap: '1.5rem' }}>
          {/* Income Table (from Ledger) */}
          <div className="glass" style={{ padding: '1.5rem' }}>
             <h3 style={{ fontWeight: 700, marginBottom: '1rem' }}>Income History</h3>

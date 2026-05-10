@@ -641,6 +641,83 @@ body {
   }
 }
 
+/* ── Layout Utilities ─────────────────────────────────────────────────────── */
+.grid-responsive-3 {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+  gap: 1rem;
+}
+
+.grid-responsive-4 {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap: 1rem;
+}
+
+@media (max-width: 640px) {
+  .grid-responsive-3, .grid-responsive-4 {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* ── Calendar ────────────────────────────────────────────────────────────── */
+.calendar-container {
+  width: 100%;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+.calendar-grid {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 4px;
+  min-width: 320px;
+}
+
+.calendar-day {
+  aspect-ratio: 1.4 / 1;
+  padding: 0.5rem;
+  position: relative;
+  cursor: pointer;
+  border-radius: 12px;
+  transition: all 0.2s ease;
+}
+
+@media (max-width: 768px) {
+  .calendar-day {
+    aspect-ratio: 1 / 1;
+    padding: 0.25rem;
+  }
+  .calendar-day-number {
+    font-size: 0.7rem !important;
+  }
+  .calendar-order-label {
+    display: none !important;
+  }
+}
+
+@media (max-width: 480px) {
+  .calendar-grid {
+    min-width: 450px; /* Ensure enough space for dates */
+  }
+}
+
+/* ── Components ───────────────────────────────────────────────────────────── */
+.section-title {
+  font-size: clamp(1.5rem, 4vw, 2.2rem);
+  font-weight: 800;
+  letter-spacing: -0.02em;
+}
+
+@media (max-width: 640px) {
+  .section-title {
+    text-align: center;
+  }
+  .section-subtitle {
+    text-align: center;
+  }
+}
+
 /* ── Toast ────────────────────────────────────────────────────────────────── */
 .toast-container {
   position: fixed;

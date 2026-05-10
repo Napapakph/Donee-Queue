@@ -174,7 +174,7 @@ export default function QueuePage({ externalData }: { externalData?: any }) {
               <p style={{ fontSize: '0.875rem' }}>Try changing the filters or add a new commission.</p>
             </div>
           ) : (
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill,minmax(300px,1fr))', gap: '1rem' }}>
+            <div className="grid-responsive-3">
               {sortedCards.map((card: any) => (
                 <CardItem key={card.id} card={card}
                   onEdit={() => { setEditCard(card); setShowModal(true); }}
@@ -259,7 +259,8 @@ function CalendarView({ cards, busyDays, onDayClick }: { cards: any[], busyDays:
         </div>
       </div>
 
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', gap: '4px' }}>
+      <div className="calendar-container">
+        <div className="calendar-grid">
         {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map(d => (
           <div key={d} style={{ textAlign: 'center', fontSize: '0.75rem', fontWeight: 700, color: 'var(--text-muted)', padding: '0.5rem 0' }}>{d}</div>
         ))}
@@ -279,12 +280,8 @@ function CalendarView({ cards, busyDays, onDayClick }: { cards: any[], busyDays:
             <div
               key={dateStr}
               onClick={() => onDayClick(day)}
-              className="glass"
+              className="glass calendar-day"
               style={{
-                aspectRatio: '1.4 / 1',
-                padding: '0.5rem',
-                position: 'relative',
-                cursor: 'pointer',
                 borderRadius: 12,
                 border: isToday ? '1px solid var(--accent)' : '1px solid rgba(255,255,255,0.05)',
                 background: isBusy ? 'rgba(239,68,68,0.1)' : isToday ? 'rgba(168,85,247,0.1)' : 'rgba(255,255,255,0.02)',
@@ -294,11 +291,11 @@ function CalendarView({ cards, busyDays, onDayClick }: { cards: any[], busyDays:
               onMouseOut={e => e.currentTarget.style.transform = 'none'}
             >
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                <div style={{ fontSize: '0.8rem', fontWeight: isToday ? 800 : 500, color: isToday ? 'var(--accent)' : 'var(--text-primary)' }}>
+                <div className="calendar-day-number" style={{ fontWeight: isToday ? 800 : 500, color: isToday ? 'var(--accent)' : 'var(--text-primary)' }}>
                   {day.getDate()}
                 </div>
                 {dayOrders.length > 0 && (
-                   <div style={{ fontSize: '0.65rem', fontWeight: 800, color: 'var(--accent)' }}>{dayOrders.length} orders</div>
+                   <div className="calendar-order-label" style={{ fontSize: '0.65rem', fontWeight: 800, color: 'var(--accent)' }}>{dayOrders.length} orders</div>
                 )}
               </div>
 
@@ -320,7 +317,8 @@ function CalendarView({ cards, busyDays, onDayClick }: { cards: any[], busyDays:
         })}
       </div>
     </div>
-  );
+  </div>
+);
 }
 
 function DayDetailsPopup({ date, cards, isBusy, isUser, onToggleBusy, onEditCard, onClose }: {
