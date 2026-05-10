@@ -42,12 +42,12 @@ export default function PricingView() {
   const sortedWorkTypes = [...workTypes].sort((a, b) => {
     const getMinPrice = (wt: WorkType) => wt.scales?.length ? Math.min(...wt.scales.map(s => s.basePrice)) : 0;
     const getMaxPrice = (wt: WorkType) => wt.scales?.length ? Math.max(...wt.scales.map(s => s.basePrice)) : 0;
-    const getFirstPrice = (wt: WorkType) => wt.scales?.[0]?.basePrice || 0;
+    const getRange = (wt: WorkType) => getMaxPrice(wt) - getMinPrice(wt);
 
-    if (sortBy === 'wt-price-asc') return getFirstPrice(a) - getFirstPrice(b);
-    if (sortBy === 'wt-price-desc') return getFirstPrice(b) - getFirstPrice(a);
-    if (sortBy === 'sc-price-asc') return getMinPrice(a) - getMinPrice(b);
-    if (sortBy === 'sc-price-desc') return getMaxPrice(b) - getMaxPrice(a);
+    if (sortBy === 'min-price-asc') return getMinPrice(a) - getMinPrice(b);
+    if (sortBy === 'min-price-desc') return getMinPrice(b) - getMinPrice(a);
+    if (sortBy === 'range-asc') return getRange(a) - getRange(b);
+    if (sortBy === 'range-desc') return getRange(b) - getRange(a);
     return 0;
   });
 
@@ -84,10 +84,10 @@ export default function PricingView() {
               onChange={(e) => setSortBy(e.target.value)}
             >
               <option value="default">Default Order</option>
-              <option value="wt-price-asc">Work Type Price: Low to High</option>
-              <option value="wt-price-desc">Work Type Price: High to Low</option>
-              <option value="sc-price-asc">Scale Min Price: Low to High</option>
-              <option value="sc-price-desc">Scale Max Price: High to Low</option>
+              <option value="min-price-asc">Cheapest First (Min Price)</option>
+              <option value="min-price-desc">Highest First (Min Price)</option>
+              <option value="range-asc">Price Range: Narrowest</option>
+              <option value="range-desc">Price Range: Widest</option>
             </select>
          </div>
       </div>
