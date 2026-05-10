@@ -14,7 +14,7 @@ interface ScaleTypeCardProps {
 }
 
 export function ScaleTypeCard({ workTypeId, scale, onEdit, onViewImage }: ScaleTypeCardProps) {
-  const { removeScaleType, settings } = useAppStore();
+  const { removeScaleType, settings, workTypes } = useAppStore();
   const [currentImg, setCurrentImg] = useState(0);
   const supabase = createClient();
   const { toast } = useToast();
@@ -22,8 +22,20 @@ export function ScaleTypeCard({ workTypeId, scale, onEdit, onViewImage }: ScaleT
   const handleDelete = async () => {
     if (!confirm('Delete this scale type?')) return;
     try {
-      const { error } = await supabase.from('scale_types').delete().eq('id', scale.id);
+      // Get current work type to update its scales array
+      const wt = workTypes.find(t => t.id === workTypeId);
+      if (!wt) return;
+
+      const updatedScales = (wt.scales || []).filter(s => s.id !== scale.id);
+
+      // Sync the updated array to Supabase
+      const { error } = await supabase
+        .from('work_types')
+        .update({ examples: updatedScales })
+        .eq('id', wt.id);
+
       if (error) throw error;
+
       removeScaleType(workTypeId, scale.id);
       toast('Scale Type deleted', 'success');
     } catch (err: any) {

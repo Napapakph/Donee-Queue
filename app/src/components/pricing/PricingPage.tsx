@@ -5,13 +5,15 @@ import { WorkType, ScaleType } from '../../lib/types';
 import { WorkTypeSection } from './WorkTypeSection';
 import { WorkTypeModal, ScaleTypeModal } from './PricingModals';
 import { ImageLightbox } from '../ImageLightbox';
-import { Plus, LayoutGrid, DollarSign, Info } from 'lucide-react';
+import { Plus, LayoutGrid, DollarSign, Info, X } from 'lucide-react';
 import { createClient } from '../../lib/supabase/client';
 import { useToast } from '../ToastProvider';
 
 export default function PricingPage() {
   const { workTypes, addWorkType, updateWorkType, addScaleType, updateScaleType, settings, role } = useAppStore();
   const isUser = role === 'user' || role === 'admin';
+
+  const uid = () => Math.random().toString(36).slice(2) + Date.now().toString(36);
   
   // Modals state
   const [showWorkModal, setShowWorkModal] = useState<{ open: boolean; data?: WorkType }>({ open: false });
@@ -31,23 +33,39 @@ export default function PricingPage() {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) return toast('Not logged in', 'error');
 
+      const id = crypto.randomUUID();
       const dbData = {
+        id,
         name: data.title,
         description: data.description,
-        cover_image: data.coverImage,
         visible: data.visible,
-        user_id: user.id
+        user_id: user.id,
+        examples: [] // Initialize empty scales JSON
       };
 
       if (showWorkModal.data) {
-        const { error } = await supabase.from('work_types').update(dbData).eq('id', showWorkModal.data.id);
+        const { error } = await supabase.from('work_types').update({
+          name: data.title,
+          description: data.description,
+          cover_image: data.coverImage,
+          visible: data.visible
+        }).eq('id', showWorkModal.data.id);
         if (error) throw error;
         updateWorkType(showWorkModal.data.id, data);
         toast('Work Type updated', 'success');
       } else {
-        const { data: res, error } = await supabase.from('work_types').insert(dbData).select('id').single();
+        const newId = uid();
+        const { error } = await supabase.from('work_types').insert({
+          id: newId,
+          name: data.title,
+          description: data.description,
+          cover_image: data.coverImage,
+          visible: data.visible,
+          user_id: user.id,
+          examples: []
+        });
         if (error) throw error;
-        addWorkType({ ...data, id: res.id });
+        addWorkType({ ...data, id });
         toast('Work Type added', 'success');
       }
     } catch (err: any) {
@@ -61,44 +79,66 @@ export default function PricingPage() {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) return toast('Not logged in', 'error');
 
-      const dbData = {
-        name: data.title,
-        description: data.description,
-        base_price: data.basePrice,
-        estimated_time: data.estimatedTime,
-        examples: data.images,
-        work_type_id: showScaleModal.workTypeId,
-        user_id: user.id
-      };
+      // Get current work type to update its scales array
+      const wt = workTypes.find(t => t.id === showScaleModal.workTypeId);
+      if (!wt) return;
 
+      let updatedScales = [...(wt.scales || [])];
       if (showScaleModal.data) {
-        const { error } = await supabase.from('scale_types').update(dbData).eq('id', showScaleModal.data.id);
-        if (error) throw error;
-        updateScaleType(showScaleModal.workTypeId, showScaleModal.data.id, data);
-        toast('Scale Type updated', 'success');
+        updatedScales = updatedScales.map(s => s.id === showScaleModal.data!.id ? { ...s, ...data } : s);
       } else {
-        const { data: res, error } = await supabase.from('scale_types').insert(dbData).select('id').single();
-        if (error) throw error;
-        addScaleType(showScaleModal.workTypeId, { ...data, id: res.id });
-        toast('Scale Type added', 'success');
+        updatedScales.push({ id: uid(), ...data });
       }
+
+      // Sync the ENTIRE scales array to the work_types.examples column
+      const { error } = await supabase
+        .from('work_types')
+        .update({ examples: updatedScales })
+        .eq('id', wt.id);
+
+      if (error) throw error;
+
+      // Update local store
+      if (showScaleModal.data) {
+        updateScaleType(wt.id, showScaleModal.data.id, data);
+      } else {
+        addScaleType(wt.id, data);
+      }
+      toast('Scale Type saved to cloud', 'success');
     } catch (err: any) {
       toast(`Failed to save scale: ${err.message}`, 'error');
     }
     setShowScaleModal({ open: false, workTypeId: '' });
   };
 
-  const sortedWorkTypes = [...workTypes].sort((a, b) => {
-    const getMinPrice = (wt: WorkType) => wt.scales?.length ? Math.min(...wt.scales.map(s => s.basePrice)) : 0;
-    const getMaxPrice = (wt: WorkType) => wt.scales?.length ? Math.max(...wt.scales.map(s => s.basePrice)) : 0;
-    const getRange = (wt: WorkType) => getMaxPrice(wt) - getMinPrice(wt);
+  // Sort & Filter state
+  const [filterWorkType, setFilterWorkType] = useState('all');
+  const [filterScaleType, setFilterScaleType] = useState('all');
+  const [minPrice, setMinPrice] = useState('');
+  const [maxPrice, setMaxPrice] = useState('');
 
-    if (sortBy === 'min-price-asc') return getMinPrice(a) - getMinPrice(b);
-    if (sortBy === 'min-price-desc') return getMinPrice(b) - getMinPrice(a);
-    if (sortBy === 'range-asc') return getRange(a) - getRange(b);
-    if (sortBy === 'range-desc') return getRange(b) - getRange(a);
-    return 0;
-  });
+  const filteredWorkTypes = workTypes.filter(wt => {
+    if (filterWorkType !== 'all' && wt.id !== filterWorkType) return false;
+    
+    // Check if any scale matches the scale type and price filters
+    const hasMatchingScale = wt.scales?.some(s => {
+      const matchesScale = filterScaleType === 'all' || s.id === filterScaleType || s.title === filterScaleType;
+      const matchesMin = !minPrice || s.basePrice >= Number(minPrice);
+      const matchesMax = !maxPrice || s.basePrice <= Number(maxPrice);
+      return matchesScale && matchesMin && matchesMax;
+    });
+
+    return hasMatchingScale || (wt.scales?.length === 0 && filterScaleType === 'all');
+  }).map(wt => ({
+    ...wt,
+    // Filter scales inside the work type to only show matching ones
+    scales: (wt.scales || []).filter(s => {
+      const matchesScale = filterScaleType === 'all' || s.id === filterScaleType || s.title === filterScaleType;
+      const matchesMin = !minPrice || s.basePrice >= Number(minPrice);
+      const matchesMax = !maxPrice || s.basePrice <= Number(maxPrice);
+      return matchesScale && matchesMin && matchesMax;
+    })
+  }));
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '2rem' }}>
@@ -111,8 +151,20 @@ export default function PricingPage() {
         </div>
       )}
 
-      {/* Analytics Summary - Conceptual */}
-      <div className="glass" style={{ padding: '1.5rem', marginBottom: '3rem', display: 'flex', gap: '2rem', flexWrap: 'wrap', alignItems: 'center', background: 'rgba(168, 85, 247, 0.05)', border: '1px solid var(--accent-glow)' }}>
+      {/* Pricing Strategy Card with Filters */}
+      <div className="glass" style={{ 
+        padding: '1.5rem 2rem', 
+        marginBottom: '3rem', 
+        display: 'flex', 
+        gap: '2rem', 
+        flexWrap: 'wrap', 
+        alignItems: 'center', 
+        background: 'rgba(168, 85, 247, 0.05)', 
+        borderRadius: '16px',
+        border: '1px solid var(--accent-glow)',
+        boxShadow: '0 8px 32px rgba(168, 85, 247, 0.1)'
+      }}>
+         {/* Left Side: Summary */}
          <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
             <div className="btn-icon" style={{ background: 'var(--accent)', color: '#fff', width: 48, height: 48, borderRadius: '12px' }}>
                <DollarSign size={24} />
@@ -124,20 +176,70 @@ export default function PricingPage() {
                </div>
             </div>
          </div>
-         <div style={{ flex: 1, display: 'flex', gap: '1rem', alignItems: 'center', justifyContent: 'flex-end' }}>
-            <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)', fontWeight: 600, textTransform: 'uppercase' }}>Sort By:</span>
-            <select 
-              className="select" 
-              style={{ width: 'auto', minWidth: '180px', fontSize: '0.9rem', background: 'rgba(255,255,255,0.05)' }}
-              value={sortBy}
-              onChange={(e) => setSortBy(e.target.value)}
-            >
-              <option value="default">Default Order</option>
-              <option value="min-price-asc">Cheapest First (Min Price)</option>
-              <option value="min-price-desc">Highest First (Min Price)</option>
-              <option value="range-asc">Price Range: Narrowest</option>
-              <option value="range-desc">Price Range: Widest</option>
-            </select>
+
+         {/* Right Side: Filters */}
+         <div style={{ flex: 1, display: 'flex', gap: '1.5rem', alignItems: 'center', justifyContent: 'flex-end', flexWrap: 'wrap' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+                <select 
+                  className="select" 
+                  style={{ width: 'auto', minWidth: '140px', borderRadius: '100px', background: '#fff', color: '#000', border: 'none', padding: '0.5rem 1rem', fontSize: '0.9rem' }}
+                  value={filterWorkType}
+                  onChange={(e) => setFilterWorkType(e.target.value)}
+                >
+                  <option value="all">Work type</option>
+                  {workTypes.map(wt => <option key={wt.id} value={wt.id}>{wt.title}</option>)}
+                </select>
+
+                <select 
+                  className="select" 
+                  style={{ width: 'auto', minWidth: '140px', borderRadius: '100px', background: '#fff', color: '#000', border: 'none', padding: '0.5rem 1rem', fontSize: '0.9rem' }}
+                  value={filterScaleType}
+                  onChange={(e) => setFilterScaleType(e.target.value)}
+                >
+                  <option value="all">scale type</option>
+                  {Array.from(new Set(workTypes.flatMap(wt => wt.scales?.map(s => s.title) || []))).map(title => (
+                    <option key={title} value={title}>{title}</option>
+                  ))}
+                </select>
+            </div>
+
+            <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+                <span style={{ fontSize: '0.9rem', color: 'var(--text-muted)', fontWeight: 600, textTransform: 'uppercase' }}>price</span>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', background: '#fff', padding: '4px 12px', borderRadius: '100px' }}>
+                   <span style={{ color: '#aaa', fontSize: '0.8rem' }}>$</span>
+                   <input 
+                     type="number" 
+                     placeholder="0" 
+                     style={{ width: '60px', border: 'none', outline: 'none', background: 'transparent', fontSize: '0.9rem', color: '#000' }}
+                     value={minPrice}
+                     onChange={(e) => setMinPrice(e.target.value)}
+                   />
+                   <span style={{ color: '#aaa' }}>-</span>
+                   <input 
+                     type="number" 
+                     placeholder="500" 
+                     style={{ width: '60px', border: 'none', outline: 'none', background: 'transparent', fontSize: '0.9rem', color: '#000' }}
+                     value={maxPrice}
+                     onChange={(e) => setMaxPrice(e.target.value)}
+                   />
+                </div>
+            </div>
+
+            {(filterWorkType !== 'all' || filterScaleType !== 'all' || minPrice || maxPrice) && (
+              <button 
+                className="btn-icon" 
+                style={{ background: 'rgba(255,255,255,0.1)', color: 'var(--text-secondary)' }}
+                onClick={() => {
+                  setFilterWorkType('all');
+                  setFilterScaleType('all');
+                  setMinPrice('');
+                  setMaxPrice('');
+                }}
+                title="Clear Filters"
+              >
+                <X size={16} />
+              </button>
+            )}
          </div>
       </div>
 
@@ -150,7 +252,7 @@ export default function PricingPage() {
         alignItems: 'flex-start',
         scrollSnapType: 'x mandatory'
       }}>
-        {sortedWorkTypes.map((wt: WorkType) => (
+        {filteredWorkTypes.map((wt: WorkType) => (
           <div key={wt.id} style={{ scrollSnapAlign: 'start' }}>
             <WorkTypeSection 
               workType={wt}

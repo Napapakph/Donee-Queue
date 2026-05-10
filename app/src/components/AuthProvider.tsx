@@ -58,23 +58,43 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
     if (wts?.length) {
       useAppStore.setState({
-        workTypes: wts.map((w: any) => ({
-          id: w.id, 
-          title: w.name, 
-          description: w.description,
-          coverImage: w.cover_image,
-          visible: w.visible,
-          scales: (scs || [])
-            .filter((s: any) => s.work_type_id === w.id)
-            .map((s: any) => ({
-              id: s.id, 
-              title: s.name, 
+        workTypes: wts.map((w: any) => {
+          // Fallback: Check if scales are stored in examples JSON or in separate scale_types table
+          let nestedScales = [];
+          if (Array.isArray(w.examples) && w.examples.length > 0 && typeof w.examples[0] === 'object') {
+            // New structure: Scales stored as JSON inside work_types.examples
+            nestedScales = w.examples.map((s: any) => ({
+              id: s.id,
+              title: s.title || s.name,
               description: s.description,
-              basePrice: s.base_price || 0,
-              images: s.examples || [],
-              estimatedTime: s.estimated_time || '3-5 days'
-            })),
-        })),
+              basePrice: s.basePrice || s.base_price || 0,
+              images: s.images || s.examples || [],
+              estimatedTime: s.estimatedTime || s.estimated_time || '',
+              extraPricing: s.extraPricing || s.extra_pricing || []
+            }));
+          } else {
+            // Old structure: Load from separate scale_types table
+            nestedScales = (scs || [])
+              .filter((s: any) => s.work_type_id === w.id)
+              .map((s: any) => ({
+                id: s.id, 
+                title: s.name, 
+                description: s.description,
+                basePrice: s.base_price || 0,
+                images: s.examples || [],
+                estimatedTime: s.estimated_time || '3-5 days'
+              }));
+          }
+
+          return {
+            id: w.id, 
+            title: w.name, 
+            description: w.description,
+            coverImage: w.cover_image,
+            visible: w.visible,
+            scales: nestedScales,
+          };
+        }),
       });
     }
 
