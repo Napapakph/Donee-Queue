@@ -65,11 +65,11 @@ export function WorkTypeSection({ workType, onEdit, onAddScale, onEditScale, onV
       <div style={{ padding: '1.25rem', display: 'flex', flexDirection: 'column', gap: '1rem' }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.25rem' }}>
           <span className="label" style={{ margin: 0 }}>Scale Types</span>
-          <span className="badge badge-gray">{workType.scales.length}</span>
+          <span className="badge badge-gray">{workType.scales?.length || 0}</span>
         </div>
 
         <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
-          {workType.scales.map((scale: ScaleType) => (
+          {workType.scales?.map((scale: ScaleType) => (
             <ScaleTypeCard 
               key={scale.id} 
               workTypeId={workType.id} 

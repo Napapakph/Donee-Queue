@@ -56,13 +56,13 @@ export default function PricingView() {
             <div>
                <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Pricing Strategy</div>
                <div style={{ fontSize: '1.1rem', fontWeight: 700 }}>
-                  {workTypes.length} Categories · {workTypes.reduce((acc: number, curr: WorkType) => acc + curr.scales.length, 0)} Scale Tiers
+                  {workTypes.length} Categories · {workTypes.reduce((acc: number, curr: WorkType) => acc + (curr.scales?.length || 0), 0)} Scale Tiers
                </div>
             </div>
          </div>
          <div className="divider" style={{ width: '1px', height: '40px', background: 'var(--border)', display: 'none' }} />
          <div style={{ flex: 1, display: 'flex', gap: '1rem', overflowX: 'auto', paddingBottom: '0.5rem' }}>
-            {workTypes.map((wt: WorkType) => wt.scales.map((st: ScaleType) => (
+            {workTypes.map((wt: WorkType) => wt.scales?.map((st: ScaleType) => (
                <div key={wt.id + st.id} className="badge badge-purple" style={{ whiteSpace: 'nowrap', padding: '0.4rem 0.8rem' }}>
                   {wt.title} : {st.title}
                </div>

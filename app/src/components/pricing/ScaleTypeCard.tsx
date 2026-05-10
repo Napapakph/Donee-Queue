@@ -17,12 +17,12 @@ export function ScaleTypeCard({ workTypeId, scale, onEdit, onViewImage }: ScaleT
 
   const nextImg = (e: React.MouseEvent) => {
     e.stopPropagation();
-    setCurrentImg((prev: number) => (prev + 1) % scale.images.length);
+    setCurrentImg((prev: number) => (prev + 1) % (scale.images?.length || 1));
   };
 
   const prevImg = (e: React.MouseEvent) => {
     e.stopPropagation();
-    setCurrentImg((prev: number) => (prev - 1 + scale.images.length) % scale.images.length);
+    setCurrentImg((prev: number) => (prev - 1 + (scale.images?.length || 1)) % (scale.images?.length || 1));
   };
 
   const formatPrice = (price: number) => {
@@ -42,15 +42,15 @@ export function ScaleTypeCard({ workTypeId, scale, onEdit, onViewImage }: ScaleT
         {/* Image Section */}
         <div style={{ 
           width: '100%', 
-          maxWidth: scale.images.length > 0 ? '240px' : '0px',
-          height: scale.images.length > 0 ? '160px' : '0px',
+          maxWidth: (scale.images?.length || 0) > 0 ? '240px' : '0px',
+          height: (scale.images?.length || 0) > 0 ? '160px' : '0px',
           position: 'relative',
           borderRadius: 'var(--radius-sm)',
           overflow: 'hidden',
           background: 'rgba(0,0,0,0.2)',
-          display: scale.images.length > 0 ? 'block' : 'none'
+          display: (scale.images?.length || 0) > 0 ? 'block' : 'none'
         }}>
-          {scale.images.length > 0 && (
+          {(scale.images?.length || 0) > 0 && (
             <>
               <img 
                 src={scale.images[currentImg]} 
@@ -69,7 +69,7 @@ export function ScaleTypeCard({ workTypeId, scale, onEdit, onViewImage }: ScaleT
                 </div>
               )}
               <div style={{ position: 'absolute', bottom: 8, right: 8, background: 'rgba(0,0,0,0.5)', padding: '2px 6px', borderRadius: 4, fontSize: '0.7rem' }}>
-                {currentImg + 1} / {scale.images.length}
+                {currentImg + 1} / {scale.images?.length || 0}
               </div>
             </>
           )}
