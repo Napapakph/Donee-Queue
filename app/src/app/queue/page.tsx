@@ -225,6 +225,7 @@ export default function QueuePage({ externalData }: { externalData?: any }) {
         <ImageLightbox
           images={lightboxData.images}
           initialIndex={lightboxData.index}
+          settings={settings}
           onClose={() => setLightboxData(null)}
         />
       )}

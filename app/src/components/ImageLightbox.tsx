@@ -7,12 +7,12 @@ import { useAppStore } from '@/lib/store';
 interface ImageLightboxProps {
   images: string[];
   initialIndex?: number;
+  settings: any;
   onClose: () => void;
 }
 
-export function ImageLightbox({ images, initialIndex = 0, onClose }: ImageLightboxProps) {
+export function ImageLightbox({ images, initialIndex = 0, settings, onClose }: ImageLightboxProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
-  const { settings } = useAppStore();
   const [currentIndex, setCurrentIndex] = useState(initialIndex);
   const [scale, setScale] = useState(1);
   const [pos, setPos] = useState({ x: 0, y: 0 });

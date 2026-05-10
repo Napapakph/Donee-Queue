@@ -286,6 +286,7 @@ export default function PricingView() {
         <ImageLightbox 
           images={lightbox.images}
           initialIndex={lightbox.index}
+          settings={settings}
           onClose={() => setLightbox({ ...lightbox, open: false })}
         />
       )}

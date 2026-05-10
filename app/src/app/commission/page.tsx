@@ -257,6 +257,7 @@ export default function CommissionPage({ externalData }: { externalData?: any })
         <ImageLightbox 
           images={lightboxData.images} 
           initialIndex={lightboxData.index} 
+          settings={settings}
           onClose={() => setLightboxData(null)} 
         />
       )}

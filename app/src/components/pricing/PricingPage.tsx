@@ -295,6 +295,7 @@ export default function PricingPage() {
         <ImageLightbox 
           images={lightbox.images}
           initialIndex={lightbox.index}
+          settings={settings}
           onClose={() => setLightbox({ ...lightbox, open: false })}
         />
       )}
