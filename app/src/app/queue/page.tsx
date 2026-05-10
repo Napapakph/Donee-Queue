@@ -2,12 +2,13 @@
 import React, { useState, useRef } from 'react';
 import {
   LayoutDashboard, Calendar, Plus, Eye, EyeOff, Edit2, Trash2,
-  Upload, Clock, AlertTriangle, X, ArrowLeft, ArrowRight
+  Upload, Clock, AlertTriangle, X, ArrowLeft, ArrowRight, FileText
 } from 'lucide-react';
 import { useAppStore } from '@/lib/store';
 import { ProgressStage, QueueCard } from '@/lib/types';
 import { QueueCardModal } from '../../components/QueueCardModal';
 import { ImageLightbox } from '../../components/ImageLightbox';
+import { CommissionReceiptModal } from '../../components/CommissionReceiptModal';
 import { useToast } from '@/components/ToastProvider';
 import { createClient } from '@/lib/supabase/client';
 import { uploadBase64Image } from '@/lib/upload';
@@ -33,6 +34,7 @@ export default function QueuePage({ externalData }: { externalData?: any }) {
   const [search, setSearch] = useState('');
   const [lightboxData, setLightboxData] = useState<{ images: string[], index: number } | null>(null);
   const [selectedDay, setSelectedDay] = useState<Date | null>(null);
+  const [receiptCard, setReceiptCard] = useState<QueueCard | null>(null);
 
   // Sync busy days to Supabase
   const handleToggleBusy = async (dateStr: string) => {
@@ -178,6 +180,7 @@ export default function QueuePage({ externalData }: { externalData?: any }) {
               {sortedCards.map((card: any) => (
                 <CardItem key={card.id} card={card}
                   onEdit={() => { setEditCard(card); setShowModal(true); }}
+                  onShowReceipt={(c) => setReceiptCard(c)}
                   onDelete={async () => {
                     if (confirm('Delete this card?')) {
                       await supabase.from('queue_cards').delete().eq('id', card.id);
@@ -198,6 +201,17 @@ export default function QueuePage({ externalData }: { externalData?: any }) {
       )}
 
       {/* Modals */}
+      {receiptCard && (
+        <CommissionReceiptModal
+          card={receiptCard}
+          workType={workTypes.find((w: any) => w.id === receiptCard.workTypeId)}
+          scale={workTypes.find((w: any) => w.id === receiptCard.workTypeId)?.scales?.find((s: any) => s.id === receiptCard.scaleTypeId)}
+          settings={settings}
+          profile={profile}
+          onClose={() => setReceiptCard(null)}
+        />
+      )}
+
       {showModal && (
         <QueueCardModal
           card={editCard}
@@ -384,8 +398,8 @@ function DayDetailsPopup({ date, cards, isBusy, isUser, onToggleBusy, onEditCard
   );
 }
 
-function CardItem({ card, onEdit, onDelete, onStageChange, onImageClick }: {
-  card: any; onEdit: () => void; onDelete: () => void; onStageChange: (stage: ProgressStage) => void; onImageClick: (imgs: string[], idx: number) => void;
+function CardItem({ card, onEdit, onDelete, onStageChange, onImageClick, onShowReceipt }: {
+  card: any; onEdit: () => void; onDelete: () => void; onStageChange: (stage: ProgressStage) => void; onImageClick: (imgs: string[], idx: number) => void; onShowReceipt: (card: any) => void;
 }) {
   const { workTypes, platforms, settings, role } = useAppStore();
   const fileRef = useRef<HTMLInputElement>(null);
@@ -518,6 +532,9 @@ function CardItem({ card, onEdit, onDelete, onStageChange, onImageClick }: {
               <Upload size={13} />
             </button>
             <input ref={fileRef} type="file" accept="image/*" style={{ display: 'none' }} onChange={handleImageUpload} />
+            <button className="btn btn-ghost btn-xs" style={{ fontSize: '0.65rem' }} onClick={() => onShowReceipt(card)}>
+              <FileText size={10} /> Receipt
+            </button>
             <button className="btn-icon" style={{ marginLeft: 'auto', color: 'var(--danger)', borderColor: 'rgba(239,68,68,0.3)' }} onClick={onDelete}>
               <Trash2 size={13} />
             </button>
