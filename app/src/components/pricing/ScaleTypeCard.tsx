@@ -3,6 +3,8 @@ import { ScaleType, PricingExtra } from '../../lib/types';
 import { Edit2, Trash2, Clock, Plus, Image as ImageIcon, ChevronLeft, ChevronRight } from 'lucide-react';
 import { useState } from 'react';
 import { useAppStore } from '../../lib/store';
+import { createClient } from '../../lib/supabase/client';
+import { useToast } from '../ToastProvider';
 
 interface ScaleTypeCardProps {
   workTypeId: string;
@@ -14,6 +16,20 @@ interface ScaleTypeCardProps {
 export function ScaleTypeCard({ workTypeId, scale, onEdit, onViewImage }: ScaleTypeCardProps) {
   const { removeScaleType, settings } = useAppStore();
   const [currentImg, setCurrentImg] = useState(0);
+  const supabase = createClient();
+  const { toast } = useToast();
+
+  const handleDelete = async () => {
+    if (!confirm('Delete this scale type?')) return;
+    try {
+      const { error } = await supabase.from('scale_types').delete().eq('id', scale.id);
+      if (error) throw error;
+      removeScaleType(workTypeId, scale.id);
+      toast('Scale Type deleted', 'success');
+    } catch (err: any) {
+      toast(`Delete failed: ${err.message}`, 'error');
+    }
+  };
 
   const nextImg = (e: React.MouseEvent) => {
     e.stopPropagation();
@@ -121,9 +137,7 @@ export function ScaleTypeCard({ workTypeId, scale, onEdit, onViewImage }: ScaleT
         <button className="btn-icon" onClick={onEdit} title="Edit Scale Type">
           <Edit2 size={16} />
         </button>
-        <button className="btn-icon" style={{ color: 'var(--danger)' }} onClick={() => {
-          if(confirm('Delete this scale type?')) removeScaleType(workTypeId, scale.id);
-        }} title="Delete Scale Type">
+        <button className="btn-icon" style={{ color: 'var(--danger)' }} onClick={handleDelete} title="Delete Scale Type">
           <Trash2 size={16} />
         </button>
       </div>

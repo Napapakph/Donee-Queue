@@ -3,6 +3,8 @@ import { WorkType, ScaleType } from '../../lib/types';
 import { ScaleTypeCard } from './ScaleTypeCard';
 import { Edit2, Trash2, Plus, LayoutGrid, Image as ImageIcon } from 'lucide-react';
 import { useAppStore } from '../../lib/store';
+import { createClient } from '../../lib/supabase/client';
+import { useToast } from '../ToastProvider';
 
 interface WorkTypeSectionProps {
   workType: WorkType;
@@ -14,6 +16,20 @@ interface WorkTypeSectionProps {
 
 export function WorkTypeSection({ workType, onEdit, onAddScale, onEditScale, onViewImage }: WorkTypeSectionProps) {
   const { removeWorkType } = useAppStore();
+  const supabase = createClient();
+  const { toast } = useToast();
+
+  const handleDelete = async () => {
+    if (!confirm('Delete entire Work Type and all its scales?')) return;
+    try {
+      const { error } = await supabase.from('work_types').delete().eq('id', workType.id);
+      if (error) throw error;
+      removeWorkType(workType.id);
+      toast('Work Type deleted', 'success');
+    } catch (err: any) {
+      toast(`Delete failed: ${err.message}`, 'error');
+    }
+  };
 
   return (
     <div className="glass" style={{
@@ -51,9 +67,7 @@ export function WorkTypeSection({ workType, onEdit, onAddScale, onEditScale, onV
                 <button className="btn-icon" style={{ background: 'rgba(255,255,255,0.1)', borderColor: 'rgba(255,255,255,0.2)', color: '#fff' }} onClick={onEdit}>
                   <Edit2 size={14} />
                 </button>
-                <button className="btn-icon" style={{ background: 'rgba(255,255,255,0.1)', borderColor: 'rgba(255,255,255,0.2)', color: 'var(--danger)' }} onClick={() => {
-                  if(confirm('Delete entire Work Type and all its scales?')) removeWorkType(workType.id);
-                }}>
+                <button className="btn-icon" style={{ background: 'rgba(255,255,255,0.1)', borderColor: 'rgba(255,255,255,0.2)', color: 'var(--danger)' }} onClick={handleDelete}>
                   <Trash2 size={14} />
                 </button>
              </div>

@@ -6,6 +6,8 @@ import { WorkTypeSection } from './WorkTypeSection';
 import { WorkTypeModal, ScaleTypeModal } from './PricingModals';
 import { ImageLightbox } from '../ImageLightbox';
 import { Plus, LayoutGrid, DollarSign, Info } from 'lucide-react';
+import { createClient } from '../../lib/supabase/client';
+import { useToast } from '../ToastProvider';
 
 export default function PricingPage() {
   const { workTypes, addWorkType, updateWorkType, addScaleType, updateScaleType, settings, role } = useAppStore();
@@ -21,20 +23,67 @@ export default function PricingPage() {
   // Sort state
   const [sortBy, setSortBy] = useState('default');
 
-  const handleSaveWorkType = (data: Omit<WorkType, 'id' | 'scales'>) => {
-    if (showWorkModal.data) {
-      updateWorkType(showWorkModal.data.id, data);
-    } else {
-      addWorkType(data);
+  const supabase = createClient();
+  const { toast } = useToast();
+
+  const handleSaveWorkType = async (data: Omit<WorkType, 'id' | 'scales'>) => {
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return toast('Not logged in', 'error');
+
+      const dbData = {
+        name: data.title,
+        description: data.description,
+        cover_image: data.coverImage,
+        visible: data.visible,
+        user_id: user.id
+      };
+
+      if (showWorkModal.data) {
+        const { error } = await supabase.from('work_types').update(dbData).eq('id', showWorkModal.data.id);
+        if (error) throw error;
+        updateWorkType(showWorkModal.data.id, data);
+        toast('Work Type updated', 'success');
+      } else {
+        const { data: res, error } = await supabase.from('work_types').insert(dbData).select('id').single();
+        if (error) throw error;
+        addWorkType({ ...data, id: res.id });
+        toast('Work Type added', 'success');
+      }
+    } catch (err: any) {
+      toast(`Failed to save: ${err.message}`, 'error');
     }
     setShowWorkModal({ open: false });
   };
 
-  const handleSaveScaleType = (data: Omit<ScaleType, 'id'>) => {
-    if (showScaleModal.data) {
-      updateScaleType(showScaleModal.workTypeId, showScaleModal.data.id, data);
-    } else {
-      addScaleType(showScaleModal.workTypeId, data);
+  const handleSaveScaleType = async (data: Omit<ScaleType, 'id'>) => {
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return toast('Not logged in', 'error');
+
+      const dbData = {
+        name: data.title,
+        description: data.description,
+        base_price: data.basePrice,
+        estimated_time: data.estimatedTime,
+        examples: data.images,
+        work_type_id: showScaleModal.workTypeId,
+        user_id: user.id
+      };
+
+      if (showScaleModal.data) {
+        const { error } = await supabase.from('scale_types').update(dbData).eq('id', showScaleModal.data.id);
+        if (error) throw error;
+        updateScaleType(showScaleModal.workTypeId, showScaleModal.data.id, data);
+        toast('Scale Type updated', 'success');
+      } else {
+        const { data: res, error } = await supabase.from('scale_types').insert(dbData).select('id').single();
+        if (error) throw error;
+        addScaleType(showScaleModal.workTypeId, { ...data, id: res.id });
+        toast('Scale Type added', 'success');
+      }
+    } catch (err: any) {
+      toast(`Failed to save scale: ${err.message}`, 'error');
     }
     setShowScaleModal({ open: false, workTypeId: '' });
   };

@@ -3,6 +3,9 @@ import { useState, useRef } from 'react';
 import { X, Check, Plus, Trash2, Image as ImageIcon, Upload } from 'lucide-react';
 import { WorkType, ScaleType, PricingExtra } from '../../lib/types';
 import { ImageCropperModal } from '../ImageCropperModal';
+import { createClient } from '../../lib/supabase/client';
+import { uploadBase64Image } from '../../lib/upload';
+import { useToast } from '../ToastProvider';
 
 interface WorkTypeModalProps {
   initialData?: Partial<WorkType>;
@@ -16,6 +19,10 @@ export function WorkTypeModal({ initialData, onSave, onClose }: WorkTypeModalPro
   const [coverImage, setCoverImage] = useState(initialData?.coverImage || '');
   const [showCropper, setShowCropper] = useState(false);
   const [tempImg, setTempImg] = useState('');
+  const [uploading, setUploading] = useState(false);
+
+  const supabase = createClient();
+  const { toast } = useToast();
 
   const handleFile = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -67,8 +74,8 @@ export function WorkTypeModal({ initialData, onSave, onClose }: WorkTypeModalPro
         </div>
         <div className="modal-footer">
           <button className="btn btn-ghost" onClick={onClose}>Cancel</button>
-          <button className="btn btn-primary" disabled={!title} onClick={() => onSave({ title, description, coverImage, visible: true })}>
-            Save Work Type
+          <button className="btn btn-primary" disabled={!title || uploading} onClick={() => onSave({ title, description, coverImage, visible: true })}>
+            {uploading ? 'Uploading...' : 'Save Work Type'}
           </button>
         </div>
       </div>
@@ -76,7 +83,20 @@ export function WorkTypeModal({ initialData, onSave, onClose }: WorkTypeModalPro
         <ImageCropperModal 
           imageSrc={tempImg} 
           aspectRatio={16/9} 
-          onCropDone={(res) => { setCoverImage(res.full); setShowCropper(false); }} 
+          onCropDone={async (res) => { 
+            try {
+              setUploading(true);
+              const { data: { user } } = await supabase.auth.getUser();
+              if(!user) return;
+              const url = await uploadBase64Image(res.full, user.id, 'covers');
+              setCoverImage(url);
+            } catch (err: any) {
+              toast('Upload failed: ' + err.message, 'error');
+            } finally {
+              setUploading(false);
+              setShowCropper(false);
+            }
+          }} 
           onCancel={() => setShowCropper(false)} 
         />
       )}
@@ -100,6 +120,10 @@ export function ScaleTypeModal({ initialData, onSave, onClose }: ScaleTypeModalP
   
   const [showCropper, setShowCropper] = useState(false);
   const [tempImg, setTempImg] = useState('');
+  const [uploading, setUploading] = useState(false);
+
+  const supabase = createClient();
+  const { toast } = useToast();
 
   const handleFile = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -196,8 +220,8 @@ export function ScaleTypeModal({ initialData, onSave, onClose }: ScaleTypeModalP
         </div>
         <div className="modal-footer">
           <button className="btn btn-ghost" onClick={onClose}>Cancel</button>
-          <button className="btn btn-primary" disabled={!title} onClick={() => onSave({ title, description, basePrice: Number(basePrice), estimatedTime, images, extraPricing })}>
-            Save Scale Type
+          <button className="btn btn-primary" disabled={!title || uploading} onClick={() => onSave({ title, description, basePrice: Number(basePrice), estimatedTime, images, extraPricing })}>
+            {uploading ? 'Uploading...' : 'Save Scale Type'}
           </button>
         </div>
       </div>
@@ -205,7 +229,20 @@ export function ScaleTypeModal({ initialData, onSave, onClose }: ScaleTypeModalP
         <ImageCropperModal 
           imageSrc={tempImg} 
           aspectRatio={1} 
-          onCropDone={(res) => { setImages([...images, res.full]); setShowCropper(false); }} 
+          onCropDone={async (res) => { 
+            try {
+              setUploading(true);
+              const { data: { user } } = await supabase.auth.getUser();
+              if(!user) return;
+              const url = await uploadBase64Image(res.full, user.id, 'scales');
+              setImages([...images, url]);
+            } catch (err: any) {
+              toast('Upload failed: ' + err.message, 'error');
+            } finally {
+              setUploading(false);
+              setShowCropper(false);
+            }
+          }} 
           onCancel={() => setShowCropper(false)} 
         />
       )}

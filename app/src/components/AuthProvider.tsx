@@ -62,12 +62,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           id: w.id, 
           title: w.name, 
           description: w.description,
+          coverImage: w.cover_image,
           visible: w.visible,
           scales: (scs || [])
             .filter((s: any) => s.work_type_id === w.id)
             .map((s: any) => ({
               id: s.id, 
               title: s.name, 
+              description: s.description,
               basePrice: s.base_price || 0,
               images: s.examples || [],
               estimatedTime: s.estimated_time || '3-5 days'
