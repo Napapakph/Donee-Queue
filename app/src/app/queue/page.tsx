@@ -206,6 +206,7 @@ export default function QueuePage({ externalData }: { externalData?: any }) {
           card={receiptCard}
           workType={workTypes.find((w: any) => w.id === receiptCard.workTypeId)}
           scale={workTypes.find((w: any) => w.id === receiptCard.workTypeId)?.scales?.find((s: any) => s.id === receiptCard.scaleTypeId)}
+          platform={platforms.find((p: any) => p.id === receiptCard.platformId)}
           settings={settings}
           profile={profile}
           onClose={() => setReceiptCard(null)}
