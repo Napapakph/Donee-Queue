@@ -221,7 +221,7 @@ export const useAppStore = create<AppState>()(
       addScaleType: (workTypeId, sc) => set((s) => ({
         workTypes: s.workTypes.map((wt) =>
           wt.id === workTypeId
-            ? { ...wt, scales: [...wt.scales, { id: uid(), ...sc }] }
+            ? { ...wt, scales: [...(wt.scales || []), { id: uid(), ...sc }] }
             : wt
         ),
       })),
@@ -230,7 +230,7 @@ export const useAppStore = create<AppState>()(
           wt.id === workTypeId
             ? {
                 ...wt,
-                scales: wt.scales.map((st) => (st.id === scaleId ? { ...st, ...sc } : st)),
+                scales: (wt.scales || []).map((st) => (st.id === scaleId ? { ...st, ...sc } : st)),
               }
             : wt
         ),
@@ -238,7 +238,7 @@ export const useAppStore = create<AppState>()(
       removeScaleType: (workTypeId, scaleId) => set((s) => ({
         workTypes: s.workTypes.map((wt) =>
           wt.id === workTypeId
-            ? { ...wt, scales: wt.scales.filter((st) => st.id !== scaleId) }
+            ? { ...wt, scales: (wt.scales || []).filter((st) => st.id !== scaleId) }
             : wt
         ),
       })),
