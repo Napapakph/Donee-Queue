@@ -46,19 +46,48 @@ const defaultProfile: UserProfile = {
   contactChannels: [],
 };
 
-// ── Seed data ──────────────────────────────────────────────────────────────────
+// ─── Seed data ──────────────────────────────────────────────────────────────────
 const seedWorkTypes: WorkType[] = [
-  { id: 'wt1', name: 'Rough Sketch', description: 'Quick pencil sketch', basePrice: 300, estimatedDurationDays: 2, visible: true },
-  { id: 'wt2', name: 'Line Art', description: 'Clean inked linework', basePrice: 600, estimatedDurationDays: 4, visible: true },
-  { id: 'wt3', name: 'Full Color', description: 'Fully rendered colored artwork', basePrice: 1200, estimatedDurationDays: 7, visible: true },
-  { id: 'wt4', name: 'Omakase', description: 'Leave it to the artist', basePrice: 900, estimatedDurationDays: 5, visible: true },
-];
-
-const seedScaleTypes: ScaleType[] = [
-  { id: 'sc1', name: 'Bust', priceModifier: 0, priceModifierType: 'flat', durationModifierDays: 0 },
-  { id: 'sc2', name: 'Half Body', priceModifier: 20, priceModifierType: 'percentage', durationModifierDays: 1 },
-  { id: 'sc3', name: 'Full Body', priceModifier: 50, priceModifierType: 'percentage', durationModifierDays: 2 },
-  { id: 'sc4', name: 'Chibi', priceModifier: -10, priceModifierType: 'percentage', durationModifierDays: -1 },
+  {
+    id: 'wt1',
+    title: 'OMAKASE',
+    description: 'Leave the artistic decisions to me for a unique surprise!',
+    visible: true,
+    scales: [
+      {
+        id: 'sc1',
+        title: 'Half Body',
+        description: 'Waist up, full color rendering.',
+        basePrice: 1500,
+        images: [],
+        estimatedTime: '3-5 days'
+      },
+      {
+        id: 'sc2',
+        title: 'Full Body',
+        description: 'Head to toe, high detail.',
+        basePrice: 2500,
+        images: [],
+        estimatedTime: '7-10 days'
+      }
+    ]
+  },
+  {
+    id: 'wt2',
+    title: 'Character Design',
+    description: 'Custom character creation from your description.',
+    visible: true,
+    scales: [
+      {
+        id: 'sc3',
+        title: 'Chibi',
+        description: 'Cute stylized small version.',
+        basePrice: 800,
+        images: [],
+        estimatedTime: '2-3 days'
+      }
+    ]
+  }
 ];
 
 const seedPlatforms: Platform[] = [
@@ -91,14 +120,13 @@ interface AppState {
 
   // Commission Art
   workTypes: WorkType[];
-  addWorkType: (w: Omit<WorkType, 'id'> & { id?: string }) => void;
+  addWorkType: (w: Omit<WorkType, 'id' | 'scales'> & { id?: string; scales?: ScaleType[] }) => void;
   updateWorkType: (id: string, w: Partial<WorkType>) => void;
   removeWorkType: (id: string) => void;
 
-  scaleTypes: ScaleType[];
-  addScaleType: (s: Omit<ScaleType, 'id'> & { id?: string }) => void;
-  updateScaleType: (id: string, s: Partial<ScaleType>) => void;
-  removeScaleType: (id: string) => void;
+  addScaleType: (workTypeId: string, s: Omit<ScaleType, 'id'> & { id?: string }) => void;
+  updateScaleType: (workTypeId: string, scaleId: string, s: Partial<ScaleType>) => void;
+  removeScaleType: (workTypeId: string, scaleId: string) => void;
 
   commissionStatus: CommissionStatus;
   setCommissionStatus: (s: CommissionStatus) => void;
@@ -183,19 +211,37 @@ export const useAppStore = create<AppState>()(
 
       // ── Work Types ──
       workTypes: seedWorkTypes,
-      addWorkType: (w) => set((s) => ({ workTypes: [...s.workTypes, { id: uid(), ...w }] })),
+      addWorkType: (w) => set((s) => ({ workTypes: [...s.workTypes, { id: uid(), scales: [], ...w }] })),
       updateWorkType: (id, w) => set((s) => ({
         workTypes: s.workTypes.map((t) => (t.id === id ? { ...t, ...w } : t)),
       })),
       removeWorkType: (id) => set((s) => ({ workTypes: s.workTypes.filter((t) => t.id !== id) })),
 
-      // ── Scale Types ──
-      scaleTypes: seedScaleTypes,
-      addScaleType: (sc) => set((s) => ({ scaleTypes: [...s.scaleTypes, { id: uid(), ...sc }] })),
-      updateScaleType: (id, sc) => set((s) => ({
-        scaleTypes: s.scaleTypes.map((t) => (t.id === id ? { ...t, ...sc } : t)),
+      // ── Scale Types (Nested) ──
+      addScaleType: (workTypeId, sc) => set((s) => ({
+        workTypes: s.workTypes.map((wt) =>
+          wt.id === workTypeId
+            ? { ...wt, scales: [...wt.scales, { id: uid(), ...sc }] }
+            : wt
+        ),
       })),
-      removeScaleType: (id) => set((s) => ({ scaleTypes: s.scaleTypes.filter((t) => t.id !== id) })),
+      updateScaleType: (workTypeId, scaleId, sc) => set((s) => ({
+        workTypes: s.workTypes.map((wt) =>
+          wt.id === workTypeId
+            ? {
+                ...wt,
+                scales: wt.scales.map((st) => (st.id === scaleId ? { ...st, ...sc } : st)),
+              }
+            : wt
+        ),
+      })),
+      removeScaleType: (workTypeId, scaleId) => set((s) => ({
+        workTypes: s.workTypes.map((wt) =>
+          wt.id === workTypeId
+            ? { ...wt, scales: wt.scales.filter((st) => st.id !== scaleId) }
+            : wt
+        ),
+      })),
 
       // ── Commission Art ──
       commissionStatus: 'open',

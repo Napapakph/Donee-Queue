@@ -2,23 +2,30 @@
 export type UserRole = 'guest' | 'user' | 'admin';
 
 // ─── Work Types & Scales ──────────────────────────────────────────────────────
-export interface WorkType {
-  id: string;
-  name: string;
-  description?: string;
-  basePrice: number;
-  estimatedDurationDays: number;
-  examples?: string[]; // image URLs
-  visible: boolean;
+export interface PricingExtra {
+  label: string;
+  price: number;
+  type: 'flat' | 'percentage';
 }
 
 export interface ScaleType {
   id: string;
-  name: string;
-  priceModifier: number;
-  priceModifierType: 'flat' | 'percentage';
-  durationModifierDays: number;
-  examples?: string[];
+  title: string;
+  description?: string;
+  images: string[]; // urls
+  basePrice: number;
+  extraPricing?: PricingExtra[];
+  estimatedTime?: string; // e.g. "3-5 days"
+}
+
+export interface WorkType {
+  id: string;
+  title: string;
+  description?: string;
+  coverImage?: string;
+  galleryImages?: string[];
+  scales: ScaleType[];
+  visible: boolean;
 }
 
 export type CommissionStatus = 'open' | 'closed' | 'waitlist';
