@@ -12,10 +12,10 @@
   --secondary: oklch(0.97 0 0);
   --bg-primary: #0d0d14;
   --bg-secondary: #1a0a2e;
-  --bg-card: rgba(255, 255, 255, 0.089);
-  --bg-card-hover: rgba(255, 255, 255, 0.25);
+  --bg-card: rgba(255, 255, 255, 0.082);
+  --bg-card-hover: rgba(255, 255, 255, 0.137);
   --border: rgba(255, 255, 255, 0.527);
-  --border-hover: rgba(255, 255, 255, 0.65);
+  --border-hover: rgba(255, 255, 255, 0.363);
   --text-primary: #f0eaff;
   --text-secondary: rgba(240, 234, 255, 0.925);
   --text-muted: rgb(240, 234, 255);
@@ -655,7 +655,9 @@ body {
 }
 
 @media (max-width: 640px) {
-  .grid-responsive-3, .grid-responsive-4 {
+
+  .grid-responsive-3,
+  .grid-responsive-4 {
     grid-template-columns: 1fr;
   }
 }
@@ -688,9 +690,11 @@ body {
     aspect-ratio: 1 / 1;
     padding: 0.25rem;
   }
+
   .calendar-day-number {
     font-size: 0.7rem !important;
   }
+
   .calendar-order-label {
     display: none !important;
   }
@@ -698,7 +702,8 @@ body {
 
 @media (max-width: 480px) {
   .calendar-grid {
-    min-width: 450px; /* Ensure enough space for dates */
+    min-width: 450px;
+    /* Ensure enough space for dates */
   }
 }
 
@@ -713,6 +718,7 @@ body {
   .section-title {
     text-align: center;
   }
+
   .section-subtitle {
     text-align: center;
   }

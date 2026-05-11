@@ -247,32 +247,33 @@ export function CommissionReceiptModal({ card, workType, scale, platform, settin
                 <h2 style={{ fontSize: '0.85rem', fontWeight: 900, color: 'var(--accent)', textTransform: 'uppercase', letterSpacing: '0.1em' }}>Commission Details</h2>
               </div>
               
-              <div style={{ display: 'flex', gap: '2rem' }}>
-                <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+              <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '1.5rem', textAlign: 'center' }}>
+                {card.images && card.images[0] && (
+                  <div style={{ width: 220, height: 280, borderRadius: '16px', overflow: 'hidden', border: '4px solid white', boxShadow: '0 4px 12px rgba(0,0,0,0.1)' }}>
+                    <img src={card.images[0]} style={{ width: '100%', height: '100%', objectFit: 'cover' }} alt="preview" />
+                  </div>
+                )}
+                
+                <div style={{ width: '100%', display: 'flex', flexDirection: 'column', gap: '1rem' }}>
                    <div>
                      <div style={{ fontSize: '0.65rem', fontWeight: 800, opacity: 0.5, marginBottom: '0.25rem' }}>WORK TYPE</div>
-                     <div style={{ fontSize: '1rem', fontWeight: 900, color: 'var(--accent)' }}>{workType?.title || 'Custom Commission'}</div>
+                     <div style={{ fontSize: '1.2rem', fontWeight: 900, color: 'var(--accent)' }}>{workType?.title || 'Custom Commission'}</div>
                    </div>
                    <div style={{ width: '100%', height: '1px', borderBottom: '1px dashed var(--accent-glow)' }} />
                    <div>
                      <div style={{ fontSize: '0.65rem', fontWeight: 800, opacity: 0.5, marginBottom: '0.25rem' }}>SCALE</div>
-                     <div style={{ fontSize: '0.9rem', fontWeight: 800 }}>{scale?.title || 'No scale specified'}</div>
+                     <div style={{ fontSize: '1rem', fontWeight: 800 }}>{scale?.title || 'No scale specified'}</div>
                    </div>
                    {card.description && (
                      <>
                       <div style={{ width: '100%', height: '1px', borderBottom: '1px dashed var(--accent-glow)' }} />
                       <div>
                         <div style={{ fontSize: '0.65rem', fontWeight: 800, opacity: 0.5, marginBottom: '0.25rem' }}>DESCRIPTION / DETAILS</div>
-                        <div style={{ fontSize: '0.8rem', lineHeight: 1.5 }}>{card.description}</div>
+                        <div style={{ fontSize: '0.85rem', lineHeight: 1.5, maxWidth: '500px', margin: '0 auto' }}>{card.description}</div>
                       </div>
                      </>
                    )}
                 </div>
-                {card.images && card.images[0] && (
-                  <div style={{ width: 160, height: 220, borderRadius: '16px', overflow: 'hidden', border: '4px solid white', boxShadow: '0 4px 12px rgba(0,0,0,0.1)' }}>
-                    <img src={card.images[0]} style={{ width: '100%', height: '100%', objectFit: 'cover' }} alt="preview" />
-                  </div>
-                )}
               </div>
             </section>
 
@@ -301,6 +302,79 @@ export function CommissionReceiptModal({ card, workType, scale, platform, settin
               </div>
             </section>
 
+            {/* QR Code Section - Only for Unpaid or Deposit */}
+            {(card.paymentStatus === 'unpaid' || card.paymentStatus === 'deposit') && (
+              <section style={{ 
+                background: 'rgba(255,255,255,0.9)', 
+                padding: '1.5rem', 
+                borderRadius: '24px', 
+                border: '2px solid var(--accent-glow)',
+                marginBottom: '1.5rem',
+                display: 'flex',
+                flexDirection: 'column',
+                alignItems: 'center',
+                textAlign: 'center'
+              }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', marginBottom: '1rem', alignSelf: 'flex-start' }}>
+                  <CreditCard size={16} style={{ color: 'var(--accent)' }} />
+                  <h2 style={{ fontSize: '0.85rem', fontWeight: 900, color: 'var(--accent)', textTransform: 'uppercase', letterSpacing: '0.1em' }}>Payment QR Code</h2>
+                </div>
+                
+                <div style={{ 
+                  width: 220, 
+                  height: 220, 
+                  background: 'white', 
+                  padding: '10px', 
+                  borderRadius: '16px', 
+                  border: '1px solid var(--accent-glow)',
+                  boxShadow: '0 4px 12px rgba(0,0,0,0.05)',
+                  marginBottom: '0.5rem',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center'
+                }}>
+                  <img 
+                    src="/payment_qr.png" 
+                    style={{ width: '100%', height: '100%', objectFit: 'contain' }} 
+                    alt="Payment QR" 
+                    onError={(e) => {
+                      (e.target as HTMLImageElement).src = 'https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=PleaseReplaceWithYourQR';
+                    }}
+                  />
+                </div>
+
+                <div style={{ 
+                  fontSize: '1.1rem', 
+                  fontWeight: 900, 
+                  color: 'var(--accent)', 
+                  marginBottom: '1rem',
+                  letterSpacing: '0.05em'
+                }}>
+                  นปภา คุ้มเผื่อน
+                </div>
+                
+                {card.paymentStatus === 'deposit' ? (
+                  <div style={{ background: 'var(--accent-glow)', padding: '0.75rem 1.5rem', borderRadius: '12px', border: '1px solid var(--accent)' }}>
+                    <div style={{ fontSize: '0.7rem', fontWeight: 800, color: 'var(--accent)', opacity: 0.8 }}>มัดจำ (50%) ที่ต้องชำระ</div>
+                    <div style={{ fontSize: '1.5rem', fontWeight: 900, color: 'var(--accent)' }}>
+                      {settings.currency}{(totalAmount / 2).toLocaleString()}
+                    </div>
+                  </div>
+                ) : (
+                  <div style={{ background: 'var(--accent-glow)', padding: '0.75rem 1.5rem', borderRadius: '12px', border: '1px solid var(--accent)' }}>
+                    <div style={{ fontSize: '0.7rem', fontWeight: 800, color: 'var(--accent)', opacity: 0.8 }}>ยอดที่ต้องชำระทั้งหมด</div>
+                    <div style={{ fontSize: '1.5rem', fontWeight: 900, color: 'var(--accent)' }}>
+                      {settings.currency}{totalAmount.toLocaleString()}
+                    </div>
+                  </div>
+                )}
+                
+                <div style={{ marginTop: '0.75rem', fontSize: '0.75rem', opacity: 0.6, fontWeight: 600 }}>
+                  Scan QR code เพื่อโอนเงินเข้าบัญชี
+                </div>
+              </section>
+            )}
+
             {/* Payment Status Banner */}
             {isPaid && (
               <div style={{ 
@@ -321,7 +395,31 @@ export function CommissionReceiptModal({ card, workType, scale, platform, settin
                   <div style={{ fontSize: '1.8rem', fontWeight: 900, color: 'var(--accent)', letterSpacing: '2px' }}>FULL PAYMENT</div>
                   <div style={{ fontSize: '0.9rem', fontWeight: 600, opacity: 0.8 }}>Thank you so much! ♡</div>
                 </div>
-                <div style={{ fontSize: '3.5rem' }}>🐈</div>
+                <img src="/mascot.png" style={{ width: 90, height: 90, objectFit: 'contain' }} alt="mascot" />
+              </div>
+            )}
+
+            {/* Deposit Status Banner (Additional visual for deposit) */}
+            {card.paymentStatus === 'deposit' && (
+              <div style={{ 
+                background: 'linear-gradient(90deg, #fffbeb, white)', 
+                padding: '1.5rem', 
+                borderRadius: '24px',
+                border: '2px solid var(--warning)',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+                position: 'relative',
+                overflow: 'hidden',
+                marginBottom: '1.5rem'
+              }}>
+                <div style={{ position: 'absolute', top: -10, left: -10, opacity: 0.1 }}>✦</div>
+                <div>
+                  <div style={{ fontSize: '0.65rem', fontWeight: 900, opacity: 0.5, marginBottom: '0.25rem', color: 'var(--warning-dark)' }}>PAYMENT STATUS</div>
+                  <div style={{ fontSize: '1.8rem', fontWeight: 900, color: 'var(--warning)', letterSpacing: '2px' }}>50% DEPOSIT</div>
+                  <div style={{ fontSize: '0.9rem', fontWeight: 600, opacity: 0.8 }}>Waiting for final payment ♡</div>
+                </div>
+                <div style={{ fontSize: '3.5rem' }}>🎨</div>
               </div>
             )}
 
