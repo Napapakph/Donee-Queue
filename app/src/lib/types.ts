@@ -66,7 +66,7 @@ export interface QueueCard {
   progress: ProgressStage;
   notes: string;
   images: string[]; // URLs / data URIs
-  selectedExtras?: { label: string; price: number; type: 'flat' | 'percentage' }[];
+  selectedExtras?: PricingExtra[];
   createdAt: string;
   updatedAt: string;
 }

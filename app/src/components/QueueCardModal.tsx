@@ -4,7 +4,7 @@ import { Check, X, Plus, Edit2, Trash2, Clock } from 'lucide-react';
 import { useAppStore } from '@/lib/store';
 import { useToast } from '@/components/ToastProvider';
 import { createClient } from '@/lib/supabase/client';
-import type { QueueCard, ScaleType, ProgressStage, PaymentStatus } from '@/lib/types';
+import type { QueueCard, ScaleType, ProgressStage, PaymentStatus, PricingExtra } from '@/lib/types';
 import { addDays, format } from 'date-fns';
 import { MinimalDatePicker } from './MinimalDatePicker';
 import { MinimalTimePicker } from './MinimalTimePicker';
