@@ -205,13 +205,14 @@ export function ScaleTypeModal({ initialData, onSave, onClose }: ScaleTypeModalP
             </div>
             <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
               {extraPricing.map((extra: PricingExtra, idx: number) => (
-                <div key={idx} style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
-                  <input className="input" style={{ flex: 2 }} value={extra.label} onChange={e => updateExtra(idx, 'label', e.target.value)} placeholder="Label (e.g. Commercial)" />
-                  <input className="input" style={{ flex: 1 }} type="number" value={extra.price} onChange={e => updateExtra(idx, 'price', Number(e.target.value))} placeholder="Price" />
-                  <select className="select" style={{ flex: 1 }} value={extra.type} onChange={e => updateExtra(idx, 'type', e.target.value)}>
+                <div key={idx} style={{ display: 'flex', gap: '0.5rem', alignItems: 'center', flexWrap: 'wrap' }}>
+                  <input className="input" style={{ flex: '2 1 150px' }} value={extra.label} onChange={e => updateExtra(idx, 'label', e.target.value)} placeholder="Label (e.g. Commercial)" />
+                  <input className="input" style={{ flex: '1 1 80px' }} type="number" value={extra.price} onChange={e => updateExtra(idx, 'price', Number(e.target.value))} placeholder="Price" />
+                  <select className="select" style={{ flex: '1 1 80px' }} value={extra.type} onChange={e => updateExtra(idx, 'type', e.target.value)}>
                     <option value="flat">Flat</option>
                     <option value="percentage">%</option>
                   </select>
+                  <input className="input" style={{ flex: '1 1 100px' }} value={extra.estimatedTime || ''} onChange={e => updateExtra(idx, 'estimatedTime', e.target.value)} placeholder="+ Days" />
                   <button className="btn-icon" style={{ color: 'var(--danger)' }} onClick={() => removeExtra(idx)}><Trash2 size={16} /></button>
                 </div>
               ))}

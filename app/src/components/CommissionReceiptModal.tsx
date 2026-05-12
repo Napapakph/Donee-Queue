@@ -291,10 +291,34 @@ export function CommissionReceiptModal({ card, workType, scale, platform, settin
               </div>
               <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
                  <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.9rem' }}>
-                   <span>Price</span>
-                   <span style={{ fontWeight: 800 }}>{settings.currency}{(card.price * card.quantity).toLocaleString()}</span>
+                   <span>Base Price ({scale?.title || 'Custom'})</span>
+                   <span style={{ fontWeight: 800 }}>{settings.currency}{(scale?.basePrice || card.price).toLocaleString()}</span>
                  </div>
-                 <div style={{ width: '100%', height: '1px', borderBottom: '1px dashed var(--accent-glow)' }} />
+                 
+                 {card.selectedExtras && card.selectedExtras.length > 0 && (
+                   <div style={{ display: 'flex', flexDirection: 'column', gap: '0.4rem', padding: '0.5rem 0', borderTop: '1px dashed var(--accent-glow)', borderBottom: '1px dashed var(--accent-glow)' }}>
+                     {card.selectedExtras.map((ex: any, idx: number) => (
+                       <div key={idx} style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.85rem', opacity: 0.8 }}>
+                         <span>+ {ex.label} ({ex.type === 'flat' ? '' : '+'}{ex.price}{ex.type === 'flat' ? '' : '%'})</span>
+                         <span style={{ fontWeight: 600 }}>
+                           {settings.currency}
+                           {ex.type === 'flat' 
+                             ? ex.price.toLocaleString() 
+                             : ((scale?.basePrice || card.price) * (ex.price / 100)).toLocaleString()
+                           }
+                         </span>
+                       </div>
+                     ))}
+                   </div>
+                 )}
+
+                 {card.quantity > 1 && (
+                    <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.9rem', color: 'var(--accent)' }}>
+                      <span>Quantity</span>
+                      <span style={{ fontWeight: 800 }}>x {card.quantity}</span>
+                    </div>
+                 )}
+
                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '0.5rem' }}>
                    <span style={{ fontSize: '1rem', fontWeight: 900 }}>TOTAL AMOUNT</span>
                    <span style={{ fontSize: '2rem', fontWeight: 900, color: 'var(--accent)' }}>{settings.currency}{(card.price * card.quantity).toLocaleString()}</span>

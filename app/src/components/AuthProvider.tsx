@@ -124,8 +124,18 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           description: c.description, price: c.price, isCommercial: c.is_commercial,
           isPublic: c.is_public, isNSFW: c.is_nsfw, quantity: c.quantity,
           briefReceived: c.brief_received, paymentStatus: c.payment_status,
-          commissionDate: c.commission_date, deadlineDate: c.deadline_date,
-          progress: c.progress, notes: c.notes, images: c.images || [],
+          commissionDate: c.commission_date,
+          deadlineDate: c.deadline_date,
+          progress: c.progress, 
+          notes: (c.notes || '').split('::EXTRAS::')[0].trim(), 
+          images: c.images || [],
+          selectedExtras: c.selected_extras || (() => {
+            const parts = (c.notes || '').split('::EXTRAS::');
+            if (parts.length > 1) {
+              try { return JSON.parse(parts[1]); } catch (e) {}
+            }
+            return [];
+          })(),
           createdAt: c.created_at, updatedAt: c.updated_at,
         })),
       });

@@ -1,6 +1,6 @@
 'use client';
 import { useState, useEffect } from 'react';
-import { Check, X, Plus } from 'lucide-react';
+import { Check, X, Plus, Edit2, Trash2, Clock } from 'lucide-react';
 import { useAppStore } from '@/lib/store';
 import { useToast } from '@/components/ToastProvider';
 import { createClient } from '@/lib/supabase/client';
@@ -57,19 +57,22 @@ export function QueueCardModal({ card, onClose }: Props) {
       progress: 'Waiting',
       notes: '',
       images: [],
+      selectedExtras: [],
     };
   });
 
   const [newPlatform, setNewPlatform] = useState('');
   const [showAddPlatform, setShowAddPlatform] = useState(false);
+  const [showEditPlatform, setShowEditPlatform] = useState(false);
+  const [editingPlatformName, setEditingPlatformName] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   // Auto-calculate price & deadline when work type / scale changes
-  useEffect(() => {
-    const wt = workTypes.find((w) => w.id === form.workTypeId);
+  const autoFill = (workId: string, scaleId?: string, commDate?: string) => {
+    const wt = workTypes.find((w) => w.id === workId);
     if (!wt) return;
     
-    const sc = (wt.scales || []).find((s: ScaleType) => s.id === form.scaleTypeId);
+    const sc = (wt.scales || []).find((s: ScaleType) => s.id === scaleId);
     
     // Parse estimated time (e.g., "3-5 days" -> 5)
     const getDays = (str?: string) => {
@@ -80,34 +83,99 @@ export function QueueCardModal({ card, onClose }: Props) {
     };
 
     const baseDays = getDays(sc?.estimatedTime);
-    const deadline = format(addDays(new Date(form.commissionDate), baseDays), 'yyyy-MM-dd');
+    const deadline = format(addDays(new Date(commDate || form.commissionDate), baseDays), 'yyyy-MM-dd');
     const price = sc?.basePrice || 0;
     
-    setForm((f) => ({ ...f, deadlineDate: deadline, price: price }));
-  }, [form.workTypeId, form.scaleTypeId, form.commissionDate]);
+    setForm((f) => ({ ...f, deadlineDate: deadline, price: price, selectedExtras: [] }));
+  };
 
-  // Populate form if editing
-  useEffect(() => {
-    if (card) setForm({
-      customerName: card.customerName,
-      platformId: card.platformId,
-      workTypeId: card.workTypeId,
-      scaleTypeId: card.scaleTypeId,
-      description: card.description,
-      price: card.price,
-      isCommercial: card.isCommercial,
-      isPublic: card.isPublic,
-      isNSFW: card.isNSFW,
-      quantity: card.quantity,
-      briefReceived: card.briefReceived,
-      paymentStatus: card.paymentStatus,
-      commissionDate: card.commissionDate,
-      commissionTime: card.commissionTime || format(new Date(card.createdAt), 'HH:mm'),
-      deadlineDate: card.deadlineDate,
-      progress: card.progress,
-      notes: card.notes,
-      images: card.images,
+  const calculateTotalPrice = (base: number, extras: { price: number; type: 'flat' | 'percentage' }[]) => {
+    let total = base;
+    let percentageBonus = 0;
+    
+    extras.forEach(ex => {
+      if (ex.type === 'flat') total += ex.price;
+      else percentageBonus += ex.price;
     });
+
+    if (percentageBonus > 0) {
+      total = total * (1 + percentageBonus / 100);
+    }
+
+    return total;
+  };
+
+  const toggleExtra = (extra: PricingExtra) => {
+    const isSelected = form.selectedExtras?.some(e => e.label === extra.label);
+    let nextExtras = [...(form.selectedExtras || [])];
+    
+    if (isSelected) {
+      nextExtras = nextExtras.filter(e => e.label !== extra.label);
+    } else {
+      nextExtras.push({ label: extra.label, price: extra.price, type: extra.type, estimatedTime: extra.estimatedTime });
+    }
+
+    // Recalculate price and deadline
+    const wt = workTypes.find(w => w.id === form.workTypeId);
+    const sc = wt?.scales?.find(s => s.id === form.scaleTypeId);
+    const basePrice = sc?.basePrice || 0;
+    
+    const newPrice = calculateTotalPrice(basePrice, nextExtras);
+    
+    // Recalculate deadline
+    const getDays = (str?: string) => {
+      if (!str) return 0;
+      const match = str.match(/(\d+)/g);
+      if (!match) return 0;
+      return parseInt(match[match.length - 1]);
+    };
+
+    let totalDays = getDays(sc?.estimatedTime || '7');
+    nextExtras.forEach(ex => {
+      totalDays += getDays(ex.estimatedTime);
+    });
+
+    const newDeadline = format(addDays(new Date(form.commissionDate), totalDays), 'yyyy-MM-dd');
+    
+    setForm(f => ({ ...f, selectedExtras: nextExtras, price: newPrice, deadlineDate: newDeadline }));
+  };
+
+  useEffect(() => {
+    if (card) {
+      let cleanNotes = card.notes || '';
+      let extras = card.selectedExtras || [];
+      
+      // If extras are encoded in notes (workaround)
+      if (cleanNotes.includes('::EXTRAS::')) {
+        const parts = cleanNotes.split('::EXTRAS::');
+        cleanNotes = parts[0].trim();
+        try {
+          extras = JSON.parse(parts[1]);
+        } catch (e) {}
+      }
+
+      setForm({
+        customerName: card.customerName,
+        platformId: card.platformId,
+        workTypeId: card.workTypeId,
+        scaleTypeId: card.scaleTypeId,
+        description: card.description,
+        price: card.price,
+        isCommercial: card.isCommercial,
+        isPublic: card.isPublic,
+        isNSFW: card.isNSFW,
+        quantity: card.quantity,
+        briefReceived: card.briefReceived,
+        paymentStatus: card.paymentStatus,
+        commissionDate: card.commissionDate.split('T')[0],
+        commissionTime: card.commissionTime || (card.commissionDate.includes('T') ? card.commissionDate.split('T')[1].slice(0, 5) : format(new Date(card.createdAt), 'HH:mm')),
+        deadlineDate: card.deadlineDate,
+        progress: card.progress,
+        notes: cleanNotes,
+        images: card.images,
+        selectedExtras: extras,
+      });
+    }
   }, [card]);
 
   const handleSave = async () => {
@@ -132,10 +200,10 @@ export function QueueCardModal({ card, onClose }: Props) {
         is_nsfw: form.isNSFW,
         brief_received: form.briefReceived,
         payment_status: form.paymentStatus,
-        commission_date: form.commissionDate,
+        commission_date: `${form.commissionDate}T${form.commissionTime || '00:00'}:00Z`,
         deadline_date: form.deadlineDate,
         progress: form.progress,
-        notes: form.notes,
+        notes: form.notes + (form.selectedExtras?.length ? `\n\n::EXTRAS::${JSON.stringify(form.selectedExtras)}` : ''),
         images: form.images,
       };
 
@@ -160,6 +228,93 @@ export function QueueCardModal({ card, onClose }: Props) {
 
   const set = (k: keyof typeof form, v: unknown) => setForm((f) => ({ ...f, [k]: v }));
 
+  const handleAddPlatform = async () => {
+    const trimmed = newPlatform.trim();
+    if (!trimmed) return;
+
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (user) {
+        const { data, error } = await supabase
+          .from('platforms')
+          .insert({ name: trimmed, user_id: user.id })
+          .select()
+          .single();
+        if (error) throw error;
+        
+        // Update store with the actual DB record
+        useAppStore.setState((s) => ({
+          platforms: [...s.platforms, { id: data.id, name: data.name }]
+        }));
+        // Select it
+        set('platformId', data.id);
+        toast('Platform saved to database', 'success');
+      } else {
+        // Fallback for local-only
+        const id = 'p_' + Date.now();
+        useAppStore.setState((s) => ({
+          platforms: [...s.platforms, { id, name: trimmed }]
+        }));
+        set('platformId', id);
+      }
+      setNewPlatform('');
+      setShowAddPlatform(false);
+    } catch (err: any) {
+      toast(`Error: ${err.message}`, 'error');
+    }
+  };
+
+  const handleRenamePlatform = async () => {
+    const trimmed = editingPlatformName.trim();
+    if (!trimmed || !form.platformId) return;
+
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (user) {
+        const { error } = await supabase
+          .from('platforms')
+          .update({ name: trimmed })
+          .eq('id', form.platformId);
+        if (error) throw error;
+        
+        useAppStore.setState((s) => ({
+          platforms: s.platforms.map(p => p.id === form.platformId ? { ...p, name: trimmed } : p)
+        }));
+        toast('Platform renamed', 'success');
+      }
+      setShowEditPlatform(false);
+    } catch (err: any) {
+      toast(`Error: ${err.message}`, 'error');
+    }
+  };
+
+  const handleDeletePlatform = async () => {
+    if (!form.platformId) return;
+    if (!confirm('Are you sure you want to delete this platform?')) return;
+
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (user) {
+        const { error } = await supabase
+          .from('platforms')
+          .delete()
+          .eq('id', form.platformId);
+        if (error) throw error;
+        
+        useAppStore.setState((s) => ({
+          platforms: s.platforms.filter(p => p.id !== form.platformId)
+        }));
+        // Select the first available platform if current one is deleted
+        const firstPlat = useAppStore.getState().platforms[0];
+        set('platformId', firstPlat?.id || '');
+        toast('Platform deleted', 'success');
+      }
+      setShowEditPlatform(false);
+    } catch (err: any) {
+      toast(`Error: ${err.message}`, 'error');
+    }
+  };
+
   return (
     <div className="modal-overlay" onClick={onClose}>
       <div className="modal" style={{ maxWidth: 680 }} onClick={(e) => e.stopPropagation()}>
@@ -181,14 +336,27 @@ export function QueueCardModal({ card, onClose }: Props) {
                 <select className="select" value={form.platformId} onChange={(e) => set('platformId', e.target.value)}>
                   {platforms.map((p) => <option key={p.id} value={p.id}>{p.name}</option>)}
                 </select>
-                <button className="btn-icon" onClick={() => setShowAddPlatform(!showAddPlatform)} title="Add platform"><Plus size={14} /></button>
+                <button className="btn-icon" onClick={() => { setShowAddPlatform(!showAddPlatform); setShowEditPlatform(false); }} title="Add platform"><Plus size={14} /></button>
+                <button className="btn-icon" onClick={() => { 
+                  const p = platforms.find(x => x.id === form.platformId);
+                  if (p) {
+                    setEditingPlatformName(p.name);
+                    setShowEditPlatform(!showEditPlatform);
+                    setShowAddPlatform(false);
+                  }
+                }} title="Edit platform"><Edit2 size={14} /></button>
               </div>
               {showAddPlatform && (
                 <div style={{ display: 'flex', gap: '0.4rem', marginTop: '0.4rem' }}>
-                  <input className="input" value={newPlatform} onChange={(e) => setNewPlatform(e.target.value)} placeholder="Platform name" />
-                  <button className="btn btn-primary btn-sm" onClick={() => {
-                    if (newPlatform.trim()) { addPlatform({ name: newPlatform.trim() }); setNewPlatform(''); setShowAddPlatform(false); }
-                  }}>Add</button>
+                  <input className="input" value={newPlatform} onChange={(e) => setNewPlatform(e.target.value)} placeholder="New platform name" onKeyDown={(e) => e.key === 'Enter' && handleAddPlatform()} />
+                  <button className="btn btn-primary btn-sm" onClick={handleAddPlatform}>Add</button>
+                </div>
+              )}
+              {showEditPlatform && (
+                <div style={{ display: 'flex', gap: '0.4rem', marginTop: '0.4rem' }}>
+                  <input className="input" value={editingPlatformName} onChange={(e) => setEditingPlatformName(e.target.value)} placeholder="Edit platform name" onKeyDown={(e) => e.key === 'Enter' && handleRenamePlatform()} />
+                  <button className="btn btn-primary btn-sm" onClick={handleRenamePlatform}>Save</button>
+                  <button className="btn btn-danger btn-sm" style={{ padding: '0 0.5rem' }} onClick={handleDeletePlatform} title="Delete platform"><Trash2 size={14} /></button>
                 </div>
               )}
             </div>
@@ -198,13 +366,20 @@ export function QueueCardModal({ card, onClose }: Props) {
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.75rem' }}>
             <div className="form-group">
               <label className="label">Work Type *</label>
-              <select className="select" value={form.workTypeId} onChange={(e) => set('workTypeId', e.target.value)}>
+              <select className="select" value={form.workTypeId} onChange={(e) => {
+                set('workTypeId', e.target.value);
+                autoFill(e.target.value, form.scaleTypeId);
+              }}>
                 {workTypes.map((w) => <option key={w.id} value={w.id}>{w.title}</option>)}
               </select>
             </div>
             <div className="form-group">
               <label className="label">Scale <span style={{ color: 'var(--text-muted)', fontSize: '0.75rem' }}>(optional)</span></label>
-              <select className="select" value={form.scaleTypeId || ''} onChange={(e) => set('scaleTypeId', e.target.value || undefined)}>
+              <select className="select" value={form.scaleTypeId || ''} onChange={(e) => {
+                const val = e.target.value || undefined;
+                set('scaleTypeId', val);
+                autoFill(form.workTypeId, val);
+              }}>
                 <option value="">Select Scale...</option>
                 {(workTypes.find(w => w.id === form.workTypeId)?.scales || []).map((s: ScaleType) => (
                   <option key={s.id} value={s.id}>{s.title} ({settings.currency}{s.basePrice})</option>
@@ -212,6 +387,106 @@ export function QueueCardModal({ card, onClose }: Props) {
               </select>
             </div>
           </div>
+
+          {/* Extra Options */}
+          {(() => {
+            const currentWT = workTypes.find(w => w.id === form.workTypeId);
+            const currentScale = currentWT?.scales?.find(s => s.id === form.scaleTypeId);
+            const extras = currentScale?.extraPricing || [];
+            
+            if (extras.length === 0) return null;
+
+            return (
+              <div className="form-group">
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '0.4rem' }}>
+                   <label className="label" style={{ margin: 0 }}>Extra Options / Modifiers</label>
+                   <span style={{ fontSize: '0.7rem', color: 'var(--text-muted)', fontWeight: 600 }}>{form.selectedExtras?.length || 0} SELECTED</span>
+                </div>
+                <div style={{ 
+                  display: 'grid', 
+                  gridTemplateColumns: 'repeat(auto-fill, minmax(180px, 1fr))', 
+                  gap: '0.75rem',
+                }}>
+                  {extras.map((ex: PricingExtra) => {
+                    const isActive = form.selectedExtras?.some(e => e.label === ex.label);
+                    return (
+                      <label key={ex.label} style={{ 
+                        display: 'flex', 
+                        flexDirection: 'column',
+                        gap: '0.4rem', 
+                        cursor: 'pointer',
+                        padding: '1rem',
+                        borderRadius: '16px',
+                        transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+                        background: isActive ? 'linear-gradient(135deg, rgba(168, 85, 247, 0.15), rgba(168, 85, 247, 0.05))' : 'rgba(255,255,255,0.03)',
+                        border: `1px solid ${isActive ? 'var(--accent)' : 'rgba(255,255,255,0.08)'}`,
+                        boxShadow: isActive ? '0 8px 24px rgba(168, 85, 247, 0.15)' : 'none',
+                        position: 'relative',
+                        overflow: 'hidden'
+                      }}>
+                        {/* Hidden native checkbox */}
+                        <input
+                          type="checkbox"
+                          checked={isActive}
+                          onChange={() => toggleExtra(ex)}
+                          style={{ position: 'absolute', opacity: 0, pointerEvents: 'none' }}
+                        />
+                        
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+                          <div style={{ 
+                            fontSize: '0.9rem', 
+                            fontWeight: 800, 
+                            color: isActive ? 'var(--accent)' : 'var(--text-secondary)',
+                            lineHeight: 1.2
+                          }}>
+                            {ex.label}
+                          </div>
+                          <div style={{
+                             width: 20, height: 20, 
+                             borderRadius: '6px', 
+                             border: `2px solid ${isActive ? 'var(--accent)' : 'rgba(255,255,255,0.2)'}`,
+                             background: isActive ? 'var(--accent)' : 'transparent',
+                             display: 'flex', alignItems: 'center', justifyContent: 'center',
+                             transition: 'all 0.2s'
+                          }}>
+                             {isActive && <Check size={12} color="white" strokeWidth={4} />}
+                          </div>
+                        </div>
+
+                        <div style={{ display: 'flex', gap: '0.75rem', marginTop: '0.2rem' }}>
+                           <div style={{ display: 'flex', alignItems: 'center', gap: '0.25rem', fontSize: '0.75rem', fontWeight: 600, color: isActive ? 'var(--accent)' : 'var(--text-muted)' }}>
+                              <span style={{ opacity: 0.6 }}>{settings.currency}</span>
+                              {ex.type === 'flat' ? ex.price.toLocaleString() : `+${ex.price}%`}
+                           </div>
+                           {ex.estimatedTime && (
+                             <div style={{ display: 'flex', alignItems: 'center', gap: '0.25rem', fontSize: '0.75rem', color: 'var(--text-muted)', opacity: 0.8 }}>
+                                <Clock size={12} />
+                                <span>+{ex.estimatedTime}d</span>
+                             </div>
+                           )}
+                        </div>
+
+                        {/* Subtle background glow for active state */}
+                        {isActive && (
+                          <div style={{
+                            position: 'absolute',
+                            bottom: -20,
+                            right: -20,
+                            width: 60,
+                            height: 60,
+                            background: 'var(--accent)',
+                            filter: 'blur(30px)',
+                            opacity: 0.3,
+                            zIndex: 0
+                          }} />
+                        )}
+                      </label>
+                    );
+                  })}
+                </div>
+              </div>
+            );
+          })()}
 
           {/* Description */}
           <div className="form-group">
@@ -353,7 +628,10 @@ export function QueueCardModal({ card, onClose }: Props) {
                 <div style={{ flex: 2 }}>
                   <MinimalDatePicker
                     value={form.commissionDate}
-                    onChange={(val) => set('commissionDate', val)}
+                    onChange={(val) => {
+                      set('commissionDate', val);
+                      autoFill(form.workTypeId, form.scaleTypeId, val);
+                    }}
                   />
                 </div>
                 <div style={{ flex: 1 }}>

@@ -6,6 +6,7 @@ export interface PricingExtra {
   label: string;
   price: number;
   type: 'flat' | 'percentage';
+  estimatedTime?: string; // e.g. "+1 day" or "2"
 }
 
 export interface ScaleType {
@@ -65,6 +66,7 @@ export interface QueueCard {
   progress: ProgressStage;
   notes: string;
   images: string[]; // URLs / data URIs
+  selectedExtras?: { label: string; price: number; type: 'flat' | 'percentage' }[];
   createdAt: string;
   updatedAt: string;
 }

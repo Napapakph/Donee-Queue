@@ -551,7 +551,7 @@ function CardItem({ card, onEdit, onDelete, onStageChange, onImageClick, onShowR
         {/* Notes */}
         {card.notes && (
           <p style={{ fontSize: '0.75rem', color: 'var(--text-muted)', background: 'rgba(255,255,255,0.03)', borderRadius: 6, padding: '0.4rem 0.6rem', marginBottom: '0.6rem', borderLeft: '2px solid var(--accent)' }}>
-            {card.notes}
+            {card.notes.split('::EXTRAS::')[0].trim()}
           </p>
         )}
 

@@ -55,8 +55,15 @@ export async function fetchPublicData(slug: string) {
       commissionDate: c.commission_date,
       deadlineDate: c.deadline_date,
       progress: c.progress,
-      notes: c.notes || '',
+      notes: (c.notes || '').split('::EXTRAS::')[0].trim(),
       images: c.images || [],
+      selectedExtras: c.selected_extras || (() => {
+        const parts = (c.notes || '').split('::EXTRAS::');
+        if (parts.length > 1) {
+          try { return JSON.parse(parts[1]); } catch (e) {}
+        }
+        return [];
+      })(),
       createdAt: c.created_at,
       updatedAt: c.updated_at,
     })),
